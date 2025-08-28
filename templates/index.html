@@ -1,0 +1,406 @@
+
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>間歇時鐘 MVP</title>
+  <style>
+    body { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto; margin:0; background:#0b0f14; color:#e6eef7;}
+    header { padding:12px 16px; border-bottom:1px solid #1f2937; display:flex; gap:16px; align-items:center; }
+    header h1 { font-size:18px; margin:0; }
+    nav button { background:#111827; border:1px solid #374151; padding:8px 12px; border-radius:8px; color:#cbd5e1; cursor:pointer;}
+    nav button.active { background:#2563eb; border-color:#2563eb; color:white;}
+    .container { padding:16px; max-width:980px; margin:0 auto;}
+    .grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(260px,1fr)); gap:12px;}
+    .card { background:#111827; border:1px solid #374151; border-radius:12px; padding:12px;}
+    .muted {color:#9ca3af;font-size:12px;}
+    .row { display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+    input, select { background:#0b1220; border:1px solid #334155; color:#e2e8f0; padding:8px; border-radius:8px; }
+    input[type=number] { width:100px;}
+    textarea { width:100%; background:#0b1220; color:#e2e8f0; border:1px solid #334155; border-radius:8px; padding:8px;}
+    .btn { background:#2563eb; color:#fff; border:none; padding:8px 10px; border-radius:8px; cursor:pointer;}
+    .btn.secondary { background:#374151;}
+    .btn.danger { background:#b91c1c;}
+    .badge { padding:2px 6px; border-radius:6px; font-size:12px; background:#0b1220; border:1px solid #334155;}
+    .player { display:flex; align-items:center; gap:8px;}
+    .stage-list { display:flex; flex-direction:column; gap:8px; }
+    .stage-item { border:1px dashed #334155; border-radius:10px; padding:8px;}
+    .footer { margin-top:40px; color:#94a3b8; font-size:12px; text-align:center;}
+  </style>
+</head>
+<body>
+<header>
+  <h1>⏱️ 間歇時鐘 MVP</h1>
+  <nav>
+    <button id="tab-community" class="active">社群 Community</button>
+    <button id="tab-team">團隊 Your Team</button>
+    <button id="tab-your">個人 Your Timer</button>
+  </nav>
+  <div style="margin-left:auto;" class="row">
+    <button id="btn-new" class="btn">＋ 新建時鐘</button>
+  </div>
+</header>
+<div class="container">
+  <section id="view-community">
+    <div class="row" style="margin-bottom:12px;">
+      <input id="search" placeholder="搜尋名稱關鍵字（Enter）" />
+      <span class="muted">點擊「加入到我的」即可複製到你的個人清單</span>
+    </div>
+    <div id="community-grid" class="grid"></div>
+  </section>
+
+  <section id="view-team" style="display:none;">
+    <div class="card">
+      <h3>團隊功能（開發中）</h3>
+      <p class="muted">將支援共享、同步播放、權限管理等協作功能。</p>
+    </div>
+  </section>
+
+  <section id="view-your" style="display:none;">
+    <div id="your-grid" class="grid"></div>
+  </section>
+
+  <div class="footer">MVP：前端使用 Web Speech API（需手勢啟動音訊），後端為 Django + DRF。此版本以 cookie 辨識擁有者，免登入。</div>
+</div>
+
+<!-- Editor Dialog -->
+<div id="editor" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.6);">
+  <div style="max-width:860px; margin:40px auto; background:#0b1220; border:1px solid #334155; border-radius:12px; padding:16px;">
+    <div class="row" style="justify-content:space-between;">
+      <h3 id="ed-title">編輯時鐘</h3>
+      <button onclick="hideEditor()" class="btn secondary">關閉</button>
+    </div>
+    <div class="row" style="margin:8px 0;">
+      <label>名稱 <input id="ed-name" /></label>
+      <label>重複次數 <input id="ed-repeat" type="number" min="1" value="1"/></label>
+      <label><input id="ed-public" type="checkbox"/> 公開</label>
+    </div>
+    <div class="row" style="margin:8px 0;">
+      <label>BGM URL <input id="ed-bgm" style="width:420px;" placeholder="可留空"/></label>
+    </div>
+
+    <div class="row" style="justify-content:space-between; margin-top:12px;">
+      <h4>段落（Stages）</h4>
+      <div class="row">
+        <button class="btn secondary" onclick="addStage()">＋ 新增段落</button>
+        <button class="btn secondary" onclick="addSampleTabata()">＋ Tabata樣板</button>
+      </div>
+    </div>
+    <div id="stage-list" class="stage-list"></div>
+    <div class="row" style="justify-content:flex-end; margin-top:12px;">
+      <button class="btn danger" onclick="deleteClock()">刪除</button>
+      <button class="btn secondary" onclick="saveClock()">儲存</button>
+      <button class="btn" onclick="playClock()">試播</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = (q)=>document.querySelector(q);
+const api = (url, opt={}) => fetch(url, Object.assign({headers:{'Content-Type':'application/json'}}, opt));
+
+// Tabs
+function showTab(id){
+  ['community','team','your'].forEach(t=>{
+    $('#view-'+t).style.display = (t===id)?'block':'none';
+    $('#tab-'+t).classList.toggle('active', t===id);
+  });
+}
+$('#tab-community').onclick = ()=>{ showTab('community'); loadCommunity(); };
+$('#tab-team').onclick = ()=>{ showTab('team'); };
+$('#tab-your').onclick = ()=>{ showTab('your'); loadMine(); };
+
+// Loaders
+async function loadCommunity(){
+  const res = await api('/api/clocks/?public=1');
+  const data = await res.json();
+  const grid = $('#community-grid'); grid.innerHTML = '';
+  data.forEach(c=>grid.appendChild(clockCard(c, false)));
+}
+async function loadMine(){
+  const res = await api('/api/clocks/?mine=1');
+  const data = await res.json();
+  const grid = $('#your-grid'); grid.innerHTML = '';
+  data.forEach(c=>grid.appendChild(clockCard(c, true)));
+}
+
+// Cards
+function clockCard(c, mine){
+  const el = document.createElement('div');
+  el.className = 'card';
+  const total = c.stages.reduce((t,s)=>t+Number(s.duration_sec||0),0);
+  const totalMin = Math.floor(total/60), totalSec = total%60;
+  el.innerHTML = `
+    <div class="row" style="justify-content:space-between;">
+      <div>
+        <div style="font-weight:700;">${c.name}</div>
+        <div class="muted">${c.stages.length} 段｜總時長 ${totalMin}:${String(totalSec).padStart(2,'0')}｜重複 ${c.repeat_count} 次</div>
+      </div>
+      <div class="row">
+        <span class="badge">${c.is_public? '公開' : '私人'}</span>
+      </div>
+    </div>
+    <div class="row" style="margin-top:8px;">
+      ${mine? `<button class="btn secondary" onclick='openEditor(${JSON.stringify(c)})'>編輯</button>`: ''}
+      <button class="btn" onclick='playInline(${JSON.stringify(c)})'>播放</button>
+      ${mine? '' : `<button class="btn secondary" onclick='forkClock(${c.id})'>加入到我的</button>`}
+    </div>
+  `;
+  return el;
+}
+
+// Create new
+$('#btn-new').onclick = async ()=>{
+  const payload = {name:'未命名時鐘', repeat_count:1, is_public:false, bgm_url:null, stages:[]};
+  const res = await api('/api/clocks/', {method:'POST', body: JSON.stringify(payload)});
+  const c = await res.json();
+  openEditor(c);
+};
+
+// Fork
+async function forkClock(id){
+  const res = await api(`/api/clocks/${id}/fork/`, {method:'POST'});
+  if(res.ok){
+    alert('已加入到我的');
+    showTab('your'); loadMine();
+  }else{
+    const j = await res.json(); alert(j.detail || '失敗');
+  }
+}
+
+// Editor
+let currentClock = null;
+function openEditor(c){
+  currentClock = JSON.parse(JSON.stringify(c));
+  $('#ed-title').textContent = `編輯：${c.name}`;
+  $('#ed-name').value = c.name;
+  $('#ed-repeat').value = c.repeat_count;
+  $('#ed-public').checked = !!c.is_public;
+  $('#ed-bgm').value = c.bgm_url || '';
+  renderStages();
+  $('#editor').style.display = 'block';
+}
+function hideEditor(){ $('#editor').style.display = 'none'; }
+function addStage(){
+  currentClock.stages.push({order_index: currentClock.stages.length+1, name:'', duration_sec:10, tts_enabled:true, speak_every_sec:0, countdown_speak_from_sec:0, cue_beep_last_n_sec:0, voice_volume:1, voice_rate:1, voice_pitch:1, bgm_volume_override:null});
+  renderStages();
+}
+function addSampleTabata(){
+  currentClock.stages = [];
+  currentClock.stages.push({order_index:1, name:'Warm-up', duration_sec:60, tts_enabled:true, speak_every_sec:0, countdown_speak_from_sec:10, cue_beep_last_n_sec:3, voice_volume:1, voice_rate:1, voice_pitch:1, bgm_volume_override:null});
+  for(let i=0;i<8;i++){
+    currentClock.stages.push({order_index:2+i*2, name:`Work ${i+1}`, duration_sec:20, tts_enabled:true, speak_every_sec:10, countdown_speak_from_sec:10, cue_beep_last_n_sec:3, voice_volume:1, voice_rate:1, voice_pitch:1, bgm_volume_override:null});
+    currentClock.stages.push({order_index:3+i*2, name:`Rest ${i+1}`, duration_sec:10, tts_enabled:true, speak_every_sec:0, countdown_speak_from_sec:5, cue_beep_last_n_sec:3, voice_volume:1, voice_rate:1, voice_pitch:1, bgm_volume_override:null});
+  }
+  renderStages();
+}
+function renderStages(){
+  const list = $('#stage-list'); list.innerHTML='';
+  currentClock.stages.forEach((s,idx)=>{
+    const d = document.createElement('div'); d.className='stage-item';
+    d.innerHTML = `
+      <div class="row" style="justify-content:space-between;">
+        <div class="row">
+          <span class="badge">#${idx+1}</span>
+          <label>名稱 <input value="${s.name||''}" oninput="currentClock.stages[${idx}].name=this.value"/></label>
+          <label>秒數 <input type="number" min="1" value="${s.duration_sec}" oninput="currentClock.stages[${idx}].duration_sec=Number(this.value)"/></label>
+          <label>語音 <input type="checkbox" ${s.tts_enabled?'checked':''} onchange="currentClock.stages[${idx}].tts_enabled=this.checked"/></label>
+        </div>
+        <div class="row">
+          <button class="btn secondary" onclick="moveStage(${idx},-1)">上移</button>
+          <button class="btn secondary" onclick="moveStage(${idx},1)">下移</button>
+          <button class="btn danger" onclick="removeStage(${idx})">刪除</button>
+        </div>
+      </div>
+      <div class="row" style="margin-top:6px;">
+        <label>報秒頻率 <input type="number" min="0" value="${s.speak_every_sec}" oninput="currentClock.stages[${idx}].speak_every_sec=Number(this.value)"/></label>
+        <label>倒數起點 <input type="number" min="0" value="${s.countdown_speak_from_sec}" oninput="currentClock.stages[${idx}].countdown_speak_from_sec=Number(this.value)"/></label>
+        <label>尾段蜂鳴 <input type="number" min="0" value="${s.cue_beep_last_n_sec}" oninput="currentClock.stages[${idx}].cue_beep_last_n_sec=Number(this.value)"/></label>
+      </div>
+    `;
+    list.appendChild(d);
+  });
+}
+function moveStage(i, dir){
+  const j = i+dir; if(j<0||j>=currentClock.stages.length) return;
+  const tmp = currentClock.stages[i]; currentClock.stages[i]=currentClock.stages[j]; currentClock.stages[j]=tmp;
+  currentClock.stages.forEach((s,k)=>s.order_index=k+1);
+  renderStages();
+}
+function removeStage(i){
+  currentClock.stages.splice(i,1);
+  currentClock.stages.forEach((s,k)=>s.order_index=k+1);
+  renderStages();
+}
+async function saveClock(){
+  currentClock.name = $('#ed-name').value.trim() || '未命名時鐘';
+  currentClock.repeat_count = Number($('#ed-repeat').value)||1;
+  currentClock.is_public = $('#ed-public').checked;
+  currentClock.bgm_url = $('#ed-bgm').value || null;
+  const res = await api(`/api/clocks/${currentClock.id}/`, {method:'PUT', body: JSON.stringify(currentClock)});
+  if(res.ok){ alert('已儲存'); hideEditor(); loadMine(); } else { alert('儲存失敗'); }
+}
+async function deleteClock(){
+  if(!confirm('確定刪除此時鐘？')) return;
+  await api(`/api/clocks/${currentClock.id}/`, {method:'DELETE'});
+  hideEditor(); loadMine();
+}
+
+// Player (simple, setInterval-based UI updates, with Web Speech & Audio for cues)
+let playing = false, timerState = null, intervalId = null, audioCtx=null, bgmEl=null;
+
+function speak(text, rate=1, pitch=1, volume=1){
+  if(!('speechSynthesis' in window)) return;
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'zh-TW';
+  u.rate = rate; u.pitch = pitch; u.volume = volume;
+  window.speechSynthesis.cancel();
+  window.speechSynthesis.speak(u);
+}
+
+function beep(){
+  if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+  const o = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  o.type='sine'; o.frequency.value=880;
+  g.gain.setValueAtTime(0.001, audioCtx.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.2, audioCtx.currentTime+0.01);
+  g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime+0.15);
+  o.connect(g).connect(audioCtx.destination);
+  o.start(); o.stop(audioCtx.currentTime+0.16);
+}
+
+function playInline(c){ openPlayer(c); }
+function playClock(){ openPlayer(currentClock); }
+
+function openPlayer(clock){
+  if(!clock.stages.length){ alert('請先新增段落'); return; }
+  // init BGM
+  if(clock.bgm_url){
+    if(!bgmEl){ bgmEl = new Audio(); bgmEl.loop = true; }
+    bgmEl.src = clock.bgm_url;
+    bgmEl.volume = 0.4;
+    bgmEl.play().catch(()=>{});
+  }
+  timerState = {clock, loop:1, idx:0, remain: clock.stages[0].duration_sec};
+  playing = true;
+  // greeting
+  const s = clock.stages[0];
+  if(s.tts_enabled && (s.name||'').trim()){ speak(s.name); }
+  renderPlayer();
+  if(intervalId) clearInterval(intervalId);
+  intervalId = setInterval(tick, 1000);
+}
+
+function stopPlayer(){
+  playing = false;
+  if(intervalId) { clearInterval(intervalId); intervalId=null; }
+  if(bgmEl){ bgmEl.pause(); }
+  $('#player').remove();
+}
+function nextStage(){
+  const {clock} = timerState;
+  timerState.idx += 1;
+  if(timerState.idx >= clock.stages.length){
+    timerState.loop += 1;
+    if(timerState.loop > (clock.repeat_count||1)){
+      alert('完成！'); stopPlayer(); return;
+    }
+    timerState.idx = 0;
+  }
+  const s = clock.stages[timerState.idx];
+  timerState.remain = s.duration_sec;
+  if(s.tts_enabled && (s.name||'').trim()){ speak(s.name); }
+  renderPlayer();
+}
+
+function tick(){
+  if(!playing) return;
+  timerState.remain -= 1;
+  const s = timerState.clock.stages[timerState.idx];
+  // speak every n seconds
+  if(s.tts_enabled && s.speak_every_sec>0){
+    const elapsed = s.duration_sec - timerState.remain;
+    if(elapsed>0 && elapsed % s.speak_every_sec === 0){
+      speak(String(timerState.remain));
+    }
+  }
+  // countdown stage
+  if(s.tts_enabled && s.countdown_speak_from_sec>0 && timerState.remain <= s.countdown_speak_from_sec){
+    speak(String(timerState.remain));
+  }
+  // beeps
+  if(s.cue_beep_last_n_sec>0 && timerState.remain <= s.cue_beep_last_n_sec){
+    beep();
+  }
+  if(timerState.remain <= 0){
+    nextStage();
+  }else{
+    renderPlayerTime();
+  }
+}
+
+function renderPlayer(){
+  let el = document.getElementById('player');
+  if(!el){
+    el = document.createElement('div'); el.id='player';
+    el.className='card'; el.style.position='fixed'; el.style.right='16px'; el.style.bottom='16px'; el.style.width='340px';
+    document.body.appendChild(el);
+  }
+  renderPlayerTime();
+  el.innerHTML = `
+    <div class="row" style="justify-content:space-between;">
+      <div><strong>${timerState.clock.name}</strong><div class="muted">回合 ${timerState.loop}/${timerState.clock.repeat_count||1}</div></div>
+      <div class="row">
+        <button class="btn secondary" onclick="prevStage()">◀</button>
+        <button class="btn secondary" onclick="nextStage()">▶</button>
+        <button class="btn danger" onclick="stopPlayer()">停止</button>
+      </div>
+    </div>
+    <div style="font-size:48px; text-align:center; margin-top:6px;" id="remain-txt">${timerState.remain}s</div>
+    <div class="muted" id="stage-name" style="text-align:center;">${(timerState.clock.stages[timerState.idx].name||'').trim()||'Stage'}</div>
+  `;
+}
+function renderPlayerTime(){
+  const el = document.getElementById('remain-txt');
+  if(el) el.textContent = `${timerState.remain}s`;
+  const nm = document.getElementById('stage-name');
+  if(nm) nm.textContent = (timerState.clock.stages[timerState.idx].name||'').trim()||'Stage';
+}
+function prevStage(){
+  const {clock} = timerState;
+  timerState.idx -= 1;
+  if(timerState.idx < 0){
+    if(timerState.loop>1){
+      timerState.loop -= 1;
+      timerState.idx = clock.stages.length-1;
+    }else{
+      timerState.idx = 0;
+    }
+  }
+  const s = clock.stages[timerState.idx];
+  timerState.remain = s.duration_sec;
+  renderPlayer();
+}
+
+// initial loads
+loadCommunity();
+loadMine();
+
+// Enter search
+$('#search').addEventListener('keydown', e=>{
+  if(e.key==='Enter'){
+    // client side filter for MVP: refetch and filter
+    loadCommunity().then(()=>{
+      const q = $('#search').value.toLowerCase();
+      const grid = $('#community-grid');
+      [...grid.children].forEach(card=>{
+        const name = card.querySelector('div div[style] strong, .name');
+      });
+    });
+  }
+});
+</script>
+</body>
+</html>
