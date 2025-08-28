@@ -10,6 +10,35 @@
 
 ---
 
+## 零、快速啟動
+一、準備與下載
+
+安裝 Python 3.10+（建議 3.11）。
+
+
+二、建立與啟動（本機）
+
+在 專案根目錄（看得到 manage.py）開 PowerShell (或直接使用Anaconda等虛擬環境工具)：
+``` python=
+#(1) 建立虛擬環境
+python -m venv .venv
+
+# (2) 啟用虛擬環境
+.venv\Scripts\activate
+
+# (3) 安裝依賴
+pip install -r requirements.txt
+
+# (4) 建表（第一次必做）
+python manage.py makemigrations timers
+python manage.py migrate
+
+# (5) 啟動開發伺服器（本機）
+python manage.py runserver
+```
+
+打開瀏覽器：http://127.0.0.1:8000
+
 ## 一、技術選型（Python優先）
 
 ### 推薦主架構（Django 方案）
