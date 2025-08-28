@@ -37,7 +37,10 @@ python manage.py migrate
 python manage.py runserver
 ```
 
-打開瀏覽器：http://127.0.0.1:8000
+三、打開瀏覽器：http://127.0.0.1:8000
+
+四、推薦工具
++ https://pinggy.io/
 
 ## 一、技術選型（Python優先）
 
