@@ -20,7 +20,10 @@ class ClockViewSet(viewsets.ModelViewSet):
         if public == '1':
             qs = qs.filter(is_public=True)
         elif mine == '1':
-            qs = qs.filter(user=self.request.user)
+            if self.request.user.is_authenticated:
+                qs = qs.filter(user=self.request.user)
+            else:
+                qs = qs.none()
         return qs
 
     def perform_create(self, serializer):
