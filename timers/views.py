@@ -1,45 +1,60 @@
-
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from django.db.models import Q
-from .models import Clock, Stage
-from .serializers import ClockSerializer, StageSerializer
+from rest_framework.views import APIView
+from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticated
+
+from .models import Clock, Stage, UserProfile
+from .serializers import ClockSerializer, StageSerializer, ProfileSerializer
+
 
 class ClockViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticatedOrReadOnly]
     serializer_class = ClockSerializer
-    queryset = Clock.objects.all().order_by('-created_at')
+    queryset = Clock.objects.select_related('user').prefetch_related('stages').order_by('-created_at')
 
     def get_queryset(self):
         qs = super().get_queryset()
-        owner = self.request.COOKIES.get('owner_token', '')
         public = self.request.query_params.get('public')
         mine = self.request.query_params.get('mine')
         if public == '1':
             qs = qs.filter(is_public=True)
         elif mine == '1':
-            qs = qs.filter(owner_token=owner)
+            qs = qs.filter(user=self.request.user)
         return qs
 
     def perform_create(self, serializer):
-        return serializer.save()
+        serializer.save()
 
-    @action(detail=True, methods=['post'])
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
     def fork(self, request, pk=None):
-        owner = request.COOKIES.get('owner_token', '')
         src = self.get_object()
-        # Enforce 10 clocks limit per owner
-        if Clock.objects.filter(owner_token=owner).count() >= 10:
-            return Response({'detail':'You already have 10 clocks.'}, status=400)
+        if Clock.objects.filter(user=request.user).count() >= 10:
+            return Response({'detail': 'You already have 10 clocks.'}, status=400)
         data = ClockSerializer(src).data
         data['is_public'] = False
         serializer = ClockSerializer(data=data, context={'request': request})
         serializer.is_valid(raise_exception=True)
         new_clock = serializer.save()
-        new_clock.owner_token = owner
-        new_clock.save()
         return Response(ClockSerializer(new_clock).data)
+
 
 class StageViewSet(viewsets.ModelViewSet):
     serializer_class = StageSerializer
     queryset = Stage.objects.all()
+
+
+class MeProfile(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        prof, _ = UserProfile.objects.get_or_create(user=request.user)
+        return Response(ProfileSerializer(prof).data)
+
+    def put(self, request):
+        prof, _ = UserProfile.objects.get_or_create(user=request.user)
+        ser = ProfileSerializer(prof, data=request.data, partial=True)
+        ser.is_valid(raise_exception=True)
+        ser.save()
+        return Response(ser.data)
+
