@@ -1,16 +1,6 @@
-
 from django.contrib import admin
-from .models import Clock, Stage
+from .models import Clock, Stage, UserProfile
 
-class StageInline(admin.TabularInline):
-    model = Stage
-    extra = 0
-
-@admin.register(Clock)
-class ClockAdmin(admin.ModelAdmin):
-    list_display = ('id', 'user', 'name', 'repeat_count', 'is_public', 'created_at')
-    inlines = [StageInline]
-
-@admin.register(Stage)
-class StageAdmin(admin.ModelAdmin):
-    list_display = ('id', 'clock', 'order_index', 'name', 'duration_sec')
+admin.site.register(Clock)
+admin.site.register(Stage)
+admin.site.register(UserProfile)

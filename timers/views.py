@@ -1,63 +1,56 @@
-from rest_framework import viewsets, status
-from rest_framework.decorators import action
-from rest_framework.response import Response
-from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticated
+from django.http import JsonResponse
+from django.contrib.auth.forms import UserCreationForm
+from django.shortcuts import render, redirect
+from rest_framework import generics, permissions
+from .models import Clock
+from .serializers import ClockSerializer
+from rest_framework.permissions import IsAuthenticated
+from django.contrib.auth.decorators import login_required
+from rest_framework.permissions import AllowAny
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
+from django.contrib.auth import get_user_model
 
-from .models import Clock, Stage, UserProfile
-from .serializers import ClockSerializer, StageSerializer, ProfileSerializer
 
+def ping(request): return JsonResponse({'ping': 'pong'})
 
-class ClockViewSet(viewsets.ModelViewSet):
-    permission_classes = [IsAuthenticatedOrReadOnly]
+#@login_required
+def index(request):
+    return render(request, 'index.html')
+
+def signup(request):
+    if request.method == 'POST':
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('login')  # 或 'index'，視你的設定而定
+    else:
+        form = UserCreationForm()
+    return render(request, 'signup.html', {'form': form})
+    
+@method_decorator(csrf_exempt, name='dispatch')
+class ClockListCreateView(generics.ListCreateAPIView):
+    queryset = Clock.objects.all()
     serializer_class = ClockSerializer
-    queryset = Clock.objects.select_related('user').prefetch_related('stages').order_by('-created_at')
+    permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
         qs = super().get_queryset()
-        public = self.request.query_params.get('public')
-        mine = self.request.query_params.get('mine')
-        if public == '1':
-            qs = qs.filter(is_public=True)
-        elif mine == '1':
+        if self.request.GET.get("mine") == "1":
             if self.request.user.is_authenticated:
                 qs = qs.filter(user=self.request.user)
             else:
-                qs = qs.none()
+                guest_user = get_user_model().objects.get(username='guest')
+                qs = qs.filter(user=guest_user)
+        elif self.request.GET.get("public") == "1":
+            qs = qs.filter(is_public=True)
         return qs
 
     def perform_create(self, serializer):
-        serializer.save()
-
-    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
-    def fork(self, request, pk=None):
-        src = self.get_object()
-        if Clock.objects.filter(user=request.user).count() >= 10:
-            return Response({'detail': 'You already have 10 clocks.'}, status=400)
-        data = ClockSerializer(src).data
-        data['is_public'] = False
-        serializer = ClockSerializer(data=data, context={'request': request})
-        serializer.is_valid(raise_exception=True)
-        new_clock = serializer.save()
-        return Response(ClockSerializer(new_clock).data)
-
-
-class StageViewSet(viewsets.ModelViewSet):
-    serializer_class = StageSerializer
-    queryset = Stage.objects.all()
-
-
-class MeProfile(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        prof, _ = UserProfile.objects.get_or_create(user=request.user)
-        return Response(ProfileSerializer(prof).data)
-
-    def put(self, request):
-        prof, _ = UserProfile.objects.get_or_create(user=request.user)
-        ser = ProfileSerializer(prof, data=request.data, partial=True)
-        ser.is_valid(raise_exception=True)
-        ser.save()
-        return Response(ser.data)
-
+        if self.request.user.is_authenticated:
+            user = self.request.user
+        else:
+            # 自動指派給「訪客帳號」
+            User = get_user_model()
+            user = User.objects.get(username='guest')
+        serializer.save(user=user)

@@ -1,19 +1,12 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <title>Sign Up</title>
-</head>
-<body>
-  <h2>Sign Up</h2>
-  {% if error %}<p style="color:red;">{{ error }}</p>{% endif %}
+
+{% extends 'base.html' %}
+
+{% block content %}
+  <h2>Sign up</h2>
   <form method="post">
     {% csrf_token %}
-    <p><label>Username <input type="text" name="username" required></label></p>
-    <p><label>Password <input type="password" name="password" required></label></p>
-    <button type="submit">Register</button>
+    {{ form.as_p }}
+    <button type="submit">Sign up</button>
   </form>
-  <p><a href="{% url 'login' %}">Login</a></p>
-</body>
-</html>
-
+  <p>Already have an account? <a href="{% url 'login' %}">Login here</a>.</p>
+{% endblock %}

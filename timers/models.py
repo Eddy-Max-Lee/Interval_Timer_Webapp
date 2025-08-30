@@ -1,4 +1,3 @@
-
 from django.db import models
 from django.conf import settings
 
@@ -28,7 +27,7 @@ class Stage(models.Model):
     name = models.CharField(max_length=120, blank=True, default='')
     duration_sec = models.PositiveIntegerField(default=10)
     tts_enabled = models.BooleanField(default=True)
-    speak_every_sec = models.PositiveIntegerField(default=0)  # 0 = off
+    speak_every_sec = models.PositiveIntegerField(default=0)
     countdown_speak_from_sec = models.PositiveIntegerField(default=0)
     cue_beep_last_n_sec = models.PositiveIntegerField(default=0)
     voice_volume = models.FloatField(default=1.0)
