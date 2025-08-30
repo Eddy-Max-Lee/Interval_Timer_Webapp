@@ -8,7 +8,7 @@ class StageInline(admin.TabularInline):
 
 @admin.register(Clock)
 class ClockAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'repeat_count', 'is_public', 'owner_token', 'created_at')
+    list_display = ('id', 'user', 'name', 'repeat_count', 'is_public', 'created_at')
     inlines = [StageInline]
 
 @admin.register(Stage)

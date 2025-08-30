@@ -1,11 +1,20 @@
 
 from django.db import models
+from django.conf import settings
+
+class UserProfile(models.Model):
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    tts_lang = models.CharField(max_length=16, default='zh-TW')
+    tts_voice_hint = models.CharField(max_length=64, blank=True, default='')
+
+    def __str__(self):
+        return f"Profile({self.user.username})"
 
 class Clock(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='clocks')
     name = models.CharField(max_length=120)
     repeat_count = models.PositiveIntegerField(default=1)
     is_public = models.BooleanField(default=False)
-    owner_token = models.CharField(max_length=64, db_index=True)
     bgm_url = models.URLField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -26,6 +35,9 @@ class Stage(models.Model):
     voice_rate = models.FloatField(default=1.0)
     voice_pitch = models.FloatField(default=1.0)
     bgm_volume_override = models.FloatField(null=True, blank=True)
+    youtube_url = models.URLField(blank=True, null=True)
+    youtube_start_sec = models.PositiveIntegerField(default=0)
+    youtube_end_sec = models.PositiveIntegerField(null=True, blank=True)
 
     class Meta:
         ordering = ['order_index', 'id']
