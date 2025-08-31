@@ -184,12 +184,13 @@ function openEditor(c){
   $('#ed-repeat').value = c.repeat_count;
   $('#ed-public').checked = !!c.is_public;
   $('#ed-bgm').value = c.bgm_url || '';
+  addWarmUpIfNeeded();
   renderStages();
   $('#editor').style.display = 'block';
 }
 function hideEditor(){ $('#editor').style.display = 'none'; }
 function addStage(){
-  currentClock.stages.push({order_index: currentClock.stages.length+1, name:'', duration_sec:10, tts_enabled:true, speak_every_sec:0, countdown_speak_from_sec:0, cue_beep_last_n_sec:0, voice_volume:1, voice_rate:1, voice_pitch:1, bgm_volume_override:null});
+  currentClock.stages.push({order_index: currentClock.stages.length+1, name:'', duration_sec:10, tts_enabled:true, speak_every_sec:10, countdown_speak_from_sec:5, cue_beep_last_n_sec:3, voice_volume:1, voice_rate:1, voice_pitch:1, bgm_volume_override:null});
   renderStages();
 }
 function addSampleTabata(){
@@ -201,21 +202,49 @@ function addSampleTabata(){
   }
   renderStages();
 }
-function renderStages(){
-  const list = $('#stage-list'); list.innerHTML='';
-  currentClock.stages.forEach((s,idx)=>{
-    const d = document.createElement('div'); d.className='stage-item';
+
+function addWarmUpIfNeeded() {
+  if (!currentClock.stages.length || currentClock.stages[0].name !== 'Warm-Up') {
+    currentClock.stages.unshift({
+      order_index: 1,
+      name: '預備',
+      duration_sec: 20,      
+      tts_enabled: true,
+      speak_every_sec:5, countdown_speak_from_sec:5, cue_beep_last_n_sec:3, voice_volume:1, voice_rate:1, voice_pitch:1, bgm_volume_override:null
+    });
+  }
+}
+
+
+function duplicateStage(index) {
+  const s = currentClock.stages[index];
+  const copy = JSON.parse(JSON.stringify(s));
+  currentClock.stages.push(copy);
+  renderStages();
+}
+
+function renderStages() {
+  const list = $('#stage-list');
+  list.innerHTML = '';
+
+  currentClock.stages.forEach((s, idx) => {
+    const d = document.createElement('div');
+    d.className = 'stage-item';
+    d.setAttribute('data-index', idx);  // for drag-and-drop
+
     d.innerHTML = `
-      <div class="row" style="justify-content:space-between;">
+      <div class="row" style="justify-content:space-between; align-items:center;">
         <div class="row">
-          <span class="badge">#${idx+1}</span>
-          <label>名稱 <input value="${s.name||''}" oninput="currentClock.stages[${idx}].name=this.value"/></label>
+          <span class="drag-handle" style="cursor:grab;margin-right:6px;">☰</span>
+          <span class="badge">#${idx + 1}</span>
+          <label>名稱 <input value="${s.name || ''}" oninput="currentClock.stages[${idx}].name=this.value"/></label>
           <label>秒數 <input type="number" min="1" value="${s.duration_sec}" oninput="currentClock.stages[${idx}].duration_sec=Number(this.value)"/></label>
-          <label>語音 <input type="checkbox" ${s.tts_enabled?'checked':''} onchange="currentClock.stages[${idx}].tts_enabled=this.checked"/></label>
+          <label>語音 <input type="checkbox" ${s.tts_enabled ? 'checked' : ''} onchange="currentClock.stages[${idx}].tts_enabled=this.checked"/></label>
         </div>
         <div class="row">
           <button class="btn secondary" onclick="moveStage(${idx},-1)">上移</button>
           <button class="btn secondary" onclick="moveStage(${idx},1)">下移</button>
+          <button class="btn secondary" onclick="duplicateStage(${idx})">複製</button>
           <button class="btn danger" onclick="removeStage(${idx})">刪除</button>
         </div>
       </div>
@@ -407,6 +436,22 @@ $('#search').addEventListener('keydown', e=>{
     });
   }
 });
+</script>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<script>
+  new Sortable(document.getElementById('stage-list'), {
+    handle: '.drag-handle',
+    animation: 150,
+    onEnd: function (evt) {
+      const newOrder = [];
+      document.querySelectorAll('#stage-list .stage-item').forEach(el => {
+        const oldIndex = parseInt(el.dataset.index);
+        newOrder.push(currentClock.stages[oldIndex]);
+      });
+      currentClock.stages = newOrder;
+      renderStages();
+    }
+  });
 </script>
 </body>
 </html>
