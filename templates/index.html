@@ -33,6 +33,18 @@
       overflow-x: hidden;
       padding: 1rem;
     }
+    #player:fullscreen {
+      width: 100vw !important;
+      height: 100vh !important;
+      inset: 0 !important;
+      right: auto !important;
+      bottom: auto !important;
+      border-radius: 0 !important;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      background: #0b0f14;
+    }
     .dropdown {
       position: relative;
       display: inline-block;
@@ -437,6 +449,7 @@ function openPlayer(clock){
   renderPlayer();
   if(intervalId) clearInterval(intervalId);
   intervalId = setInterval(tick, 1000);
+
 }
 
 function stopPlayer(){
@@ -462,7 +475,8 @@ function nextStage(){
 }
 
 function tick(){
-  if(!playing) return;
+  if(!playing) return;   
+  if (isPaused) return; // ✅ 暫停時直接返回（不扣秒、不發聲）
   timerState.remain -= 1;
   const s = timerState.clock.stages[timerState.idx];
   // speak every n seconds
@@ -494,26 +508,56 @@ function renderPlayer(){
     el.className='card'; el.style.position='fixed'; el.style.right='16px'; el.style.bottom='16px'; el.style.width='340px';
     document.body.appendChild(el);
   }
-  renderPlayerTime();
+
+  const next = timerState.clock.stages[timerState.idx + 1];
   el.innerHTML = `
     <div class="row" style="justify-content:space-between;">
-      <div><strong>${timerState.clock.name}</strong><div class="muted">回合 ${timerState.loop}/${timerState.clock.repeat_count||1}</div></div>
+      <div>
+        <strong>${timerState.clock.name}</strong>
+        <div class="muted">回合 ${timerState.loop}/${timerState.clock.repeat_count||1}</div>
+      </div>
       <div class="row">
         <button class="btn secondary" onclick="prevStage()">◀</button>
         <button class="btn secondary" onclick="nextStage()">▶</button>
+        <button class="btn secondary" onclick="toggleFullscreen()">⛶ 最大化</button>
+        <button id="pause-resume-btn" class="btn" onclick="togglePause()">⏸ 暫停</button>
         <button class="btn danger" onclick="stopPlayer()">停止</button>
       </div>
     </div>
+
     <div style="font-size:48px; text-align:center; margin-top:6px;" id="remain-txt">${timerState.remain}s</div>
-    <div class="muted" id="stage-name" style="text-align:center;">${(timerState.clock.stages[timerState.idx].name||'').trim()||'Stage'}</div>
+    <div class="muted" id="stage-name" style="text-align:center;">
+      ${(timerState.clock.stages[timerState.idx].name||'').trim()||'Stage'}
+    </div>
+    <div class="muted" style="text-align:center; font-size:12px;">
+      下一段：<span id="next-name">${next ? (next.name||'未命名') : '完成'}</span>
+    </div>
   `;
 }
+
+function toggleFullscreen() {
+  const el = document.getElementById('player');
+  if (!document.fullscreenElement) {
+    el.requestFullscreen().catch(err => alert(`無法進入全螢幕: ${err.message}`));
+  } else {
+    document.exitFullscreen();
+  }
+}
+
 function renderPlayerTime(){
   const el = document.getElementById('remain-txt');
   if(el) el.textContent = `${timerState.remain}s`;
+
   const nm = document.getElementById('stage-name');
   if(nm) nm.textContent = (timerState.clock.stages[timerState.idx].name||'').trim()||'Stage';
+
+  const nextEl = document.getElementById('next-name');
+  if(nextEl){
+    const next = timerState.clock.stages[timerState.idx + 1];
+    nextEl.textContent = next ? (next.name || '未命名') : '完成';
+  }
 }
+
 function prevStage(){
   const {clock} = timerState;
   timerState.idx -= 1;
@@ -529,6 +573,15 @@ function prevStage(){
   timerState.remain = s.duration_sec;
   renderPlayer();
 }
+
+let isPaused = false;
+
+function togglePause() {
+  isPaused = !isPaused;
+  const btn = document.getElementById('pause-resume-btn');
+  btn.textContent = isPaused ? '▶️ 繼續' : '⏸ 暫停';
+}
+
 
 // initial loads
 loadCommunity();
