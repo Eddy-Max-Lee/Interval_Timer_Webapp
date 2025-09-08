@@ -33,6 +33,34 @@
       overflow-x: hidden;
       padding: 1rem;
     }
+    .dropdown {
+      position: relative;
+      display: inline-block;
+    }
+
+    .dropdown-menu {
+      display: none;
+      position: absolute;
+      background-color: white;
+      border: 1px solid #ccc;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      z-index: 1000;
+      min-width: 120px;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .dropdown-menu .dropdown-item {
+      padding: 8px 12px;
+      cursor: pointer;
+      font-size: 0.95rem;
+      color: #333;
+    }
+
+    .dropdown-menu .dropdown-item:hover {
+      background-color: #f0f0f0;
+    }
+
   </style>
 </head>
 <body>
@@ -45,6 +73,7 @@
   </nav>
   <div style="margin-left:auto;" class="row">
     <button id="btn-new" class="btn">＋ 新建時鐘</button>
+    <button class="btn secondary" onclick="triggerImportJSON()">⭳ 匯入時鐘</button>
   </div>
 </header>
 <div class="container">
@@ -131,31 +160,95 @@ async function loadMine(){
   data.forEach(c=>grid.appendChild(clockCard(c, true)));
 }
 
+function triggerImportJSON() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json';
+  input.onchange = () => {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const clock = JSON.parse(e.target.result);
+        delete clock.id;               // 關鍵：視為新建
+        delete clock.created_at;
+        delete clock.updated_at;
+        delete clock.user;
+        if (!Array.isArray(clock.stages)) { alert('❌ 匯入失敗：缺少 stages'); return; }
+        clock.stages.forEach(s => delete s.id);  // 以防萬一
+        openEditor(clock);            // 進編輯器；第一次儲存會走 POST
+      } catch {
+        alert('❌ 匯入失敗：不是合法的 JSON 檔案');
+      }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
+
+
+
+
 // Cards
-function clockCard(c, mine){
+function clockCard(c, mine) {
   const el = document.createElement('div');
   el.className = 'card';
-  const total = c.stages.reduce((t,s)=>t+Number(s.duration_sec||0),0);
-  const totalMin = Math.floor(total/60), totalSec = total%60;
+  const total = c.stages.reduce((t, s) => t + Number(s.duration_sec || 0), 0);
+  const totalMin = Math.floor(total / 60), totalSec = total % 60;
+
   el.innerHTML = `
     <div class="row" style="justify-content:space-between;">
       <div>
         <div style="font-weight:700;">${c.name}</div>
-        <div class="muted">${c.stages.length} 段｜總時長 ${totalMin}:${String(totalSec).padStart(2,'0')}｜重複 ${c.repeat_count} 次</div>
+        <div class="muted">${c.stages.length} 段｜總時長 ${totalMin}:${String(totalSec).padStart(2, '0')}｜重複 ${c.repeat_count} 次</div>
       </div>
       <div class="row">
-        <span class="badge">${c.is_public? '公開' : '私人'}</span>
+        <span class="badge">${c.is_public ? '公開' : '私人'}</span>
       </div>
     </div>
     <div class="row" style="margin-top:8px;">
-      ${mine? `<button class="btn secondary" onclick='openEditor(${JSON.stringify(c)})'>編輯</button>`: ''}
+      ${mine ? `<button class="btn secondary" onclick='openEditor(${JSON.stringify(c)})'>編輯</button>` : ''}
       <button class="btn" onclick='playInline(${JSON.stringify(c)})'>播放</button>
-      ${mine? '' : `<button class="btn secondary" onclick='forkClock(${c.id})'>加入到我的</button>`}
+      ${mine ? '' : `<button class="btn secondary" onclick='forkClock(${c.id})'>加入到我的</button>`}
+      <div class="dropdown">
+        <button class="btn secondary">匯出 ▼</button>
+        <div class="dropdown-menu" style="display:none;position:absolute;z-index:100;">
+          <div class="dropdown-item" onclick="alert('MP4 匯出功能尚在開發中')">MP4 (開發中)</div>
+          <div class="dropdown-item" onclick='exportClockJSON(${JSON.stringify(c)})'>JSON</div>
+        </div>
+      </div>
     </div>
   `;
+
+  // 讓 dropdown 展開
+  setTimeout(() => {
+    const dropdown = el.querySelector('.dropdown');
+    const menu = dropdown.querySelector('.dropdown-menu');
+    const btn = dropdown.querySelector('button');
+    btn.onclick = () => {
+      menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+    };
+    document.addEventListener('click', e => {
+      if (!dropdown.contains(e.target)) menu.style.display = 'none';
+    });
+  }, 0);
+
   return el;
 }
 
+function exportClockJSON(clock) {
+  const dataStr = JSON.stringify(clock, null, 2);
+  const blob = new Blob([dataStr], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${clock.name || 'clock'}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
 // Create new
 $('#btn-new').onclick = async ()=>{
   const payload = {name:'未命名時鐘', repeat_count:1, is_public:false, bgm_url:null, stages:[]};
@@ -204,16 +297,21 @@ function addSampleTabata(){
 }
 
 function addWarmUpIfNeeded() {
-  if (!currentClock.stages.length || currentClock.stages[0].name !== 'Warm-Up') {
+  const first = currentClock.stages[0];
+  const isWarm = first && (/^warm-?up$/i.test((first.name||'').trim()) || first.name === '預備');
+  if (!isWarm) {
     currentClock.stages.unshift({
       order_index: 1,
-      name: '預備',
-      duration_sec: 20,      
+      name: 'Warm-Up',  // 建議固定
+      duration_sec: 20,
       tts_enabled: true,
-      speak_every_sec:5, countdown_speak_from_sec:5, cue_beep_last_n_sec:3, voice_volume:1, voice_rate:1, voice_pitch:1, bgm_volume_override:null
+      speak_every_sec:5, countdown_speak_from_sec:5, cue_beep_last_n_sec:3,
+      voice_volume:1, voice_rate:1, voice_pitch:1, bgm_volume_override:null
     });
   }
+  currentClock.stages.forEach((s,i)=>s.order_index=i+1);
 }
+
 
 
 function duplicateStage(index) {
@@ -268,14 +366,27 @@ function removeStage(i){
   currentClock.stages.forEach((s,k)=>s.order_index=k+1);
   renderStages();
 }
+
 async function saveClock(){
   currentClock.name = $('#ed-name').value.trim() || '未命名時鐘';
   currentClock.repeat_count = Number($('#ed-repeat').value)||1;
   currentClock.is_public = $('#ed-public').checked;
   currentClock.bgm_url = $('#ed-bgm').value || null;
-  const res = await api(`/api/clocks/${currentClock.id}/`, {method:'PUT', body: JSON.stringify(currentClock)});
-  if(res.ok){ alert('已儲存'); hideEditor(); loadMine(); } else { alert('儲存失敗'); }
+
+  const isNew = !currentClock.id;
+  const url = isNew ? '/api/clocks/' : `/api/clocks/${currentClock.id}/`;
+  const method = isNew ? 'POST' : 'PUT';
+
+  const res = await api(url, { method, body: JSON.stringify(currentClock) });
+  if(!res.ok){ alert('儲存失敗'); return; }
+
+  const saved = await res.json();
+  currentClock = saved;       // 重要：POST 後拿回 id，之後才會用 PUT
+  alert('已儲存');
+  hideEditor();
+  loadMine();
 }
+
 async function deleteClock(){
   if(!confirm('確定刪除此時鐘？')) return;
   await api(`/api/clocks/${currentClock.id}/`, {method:'DELETE'});

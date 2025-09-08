@@ -18,8 +18,12 @@ class ClockSerializer(serializers.ModelSerializer):
         request = self.context['request']
         owner = request.COOKIES.get('owner_token', 'anonymous')
         clock = Clock.objects.create(owner_token=owner, **validated_data)
+
         for i, s in enumerate(stages_data, start=1):
-            Stage.objects.create(clock=clock, order_index=s.get('order_index', i), **s)
+            s = dict(s)                 # 避免直接改到原物件
+            s.pop('order_index', None)  # 移除，避免和下一行衝突
+            Stage.objects.create(clock=clock, order_index=i, **s)
+
         return clock
 
     def update(self, instance, validated_data):
