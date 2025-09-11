@@ -3,7 +3,9 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+  
   <title>間歇時鐘 MVP</title>
   <style>
     body { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto; margin:0; background:#0b0f14; color:#e6eef7;}
@@ -33,6 +35,41 @@
       overflow-x: hidden;
       padding: 1rem;
     }
+
+    /* 基本尺寸（非全螢幕） */
+    #player .time        { font-size: 48px; line-height: 1.1; }
+    #player .stage-title { font-size: 14px; }
+    #player .next-label  { font-size: 12px; }
+
+    /* 全螢幕時：用 vmin 依視窗最短邊等比例縮放（手機 / PC 都適用） */
+    #player:fullscreen .time,
+    #player:-webkit-full-screen .time {
+      font-size: clamp(64px, 18vmin, 220px);
+    }
+
+    #player:fullscreen .stage-title,
+    #player:-webkit-full-screen .stage-title {
+      font-size: clamp(20px, 6vmin, 64px);
+    }
+
+    #player:fullscreen .next-label,
+    #player:-webkit-full-screen .next-label {
+      font-size: clamp(16px, 4vmin, 36px);
+    }
+
+    /* 全螢幕時把按鈕、間距也放大 */
+    #player:fullscreen .row .btn,
+    #player:-webkit-full-screen .row .btn {
+      font-size: clamp(16px, 4vmin, 28px);
+      padding: clamp(8px, 1.8vmin, 18px) clamp(12px, 2.4vmin, 24px);
+      border-radius: clamp(8px, 1.8vmin, 18px);
+    }
+
+    #player:fullscreen #remain-txt,
+    #player:-webkit-full-screen #remain-txt {
+      margin-top: clamp(8px, 3vmin, 24px);
+    }
+
     #player:fullscreen {
       width: 100vw !important;
       height: 100vh !important;
@@ -49,6 +86,22 @@
       position: relative;
       display: inline-block;
     }
+
+    /* —— fallback：劇院模式（theater） —— */
+    body.no-scroll { overflow: hidden; }
+    #player.theater {
+      position: fixed !important;
+      inset: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      border-radius: 0 !important;
+      background: #0b0f14;
+      display: flex; flex-direction: column; justify-content: center;
+      padding: max(12px, env(safe-area-inset-top))
+              max(12px, env(safe-area-inset-right))
+              max(12px, env(safe-area-inset-bottom))
+              max(12px, env(safe-area-inset-left));
+}
 
     .dropdown-menu {
       display: none;
@@ -525,24 +578,61 @@ function renderPlayer(){
       </div>
     </div>
 
-    <div style="font-size:48px; text-align:center; margin-top:6px;" id="remain-txt">${timerState.remain}s</div>
-    <div class="muted" id="stage-name" style="text-align:center;">
+    <div class="time" id="remain-txt" style="text-align:center; margin-top:6px;">${timerState.remain}s</div>
+    <div class="muted  stage-title" id="stage-name" style="text-align:center;">
       ${(timerState.clock.stages[timerState.idx].name||'').trim()||'Stage'}
     </div>
-    <div class="muted" style="text-align:center; font-size:12px;">
+    <div class="muted  next-label" style="text-align:center; font-size:12px;">
       下一段：<span id="next-name">${next ? (next.name||'未命名') : '完成'}</span>
     </div>
   `;
 }
 
-function toggleFullscreen() {
-  const el = document.getElementById('player');
-  if (!document.fullscreenElement) {
-    el.requestFullscreen().catch(err => alert(`無法進入全螢幕: ${err.message}`));
-  } else {
-    document.exitFullscreen();
+function fsElement() {
+  return document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement || null;
+}
+async function enterFullscreen(el) {
+  const req = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
+  if (!req) return false;
+  try {
+    await req.call(el);
+    return true;
+  } catch (e) {
+    return false;
   }
 }
+async function exitFullscreen() {
+  const exit = document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen;
+  if (!exit) return;
+  try { await exit.call(document); } catch(e) {}
+}
+
+async function toggleFullscreen() {
+  const el = document.getElementById('player');
+  if (!fsElement()) {
+    const ok = await enterFullscreen(el);
+    if (!ok) {
+      // Safari 失敗 → fallback：劇院模式
+      document.body.classList.add('no-scroll');
+      el.classList.add('theater');
+    }
+  } else {
+    await exitFullscreen();
+    document.body.classList.remove('no-scroll');
+    el.classList.remove('theater');
+  }
+}
+
+// 讓按下 Esc 或系統退出全螢幕時，自動移除劇院模式
+function onFSChange() {
+  if (!fsElement()) {
+    document.body.classList.remove('no-scroll');
+    const el = document.getElementById('player');
+    if (el) el.classList.remove('theater');
+  }
+}
+document.addEventListener('fullscreenchange', onFSChange);
+document.addEventListener('webkitfullscreenchange', onFSChange);
 
 function renderPlayerTime(){
   const el = document.getElementById('remain-txt');
