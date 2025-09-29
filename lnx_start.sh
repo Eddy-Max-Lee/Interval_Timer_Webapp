@@ -1,35 +1,38 @@
 #!/bin/bash
 
 echo
-echo "?? ±Ò°Ê Interval Timer MVP ±M®×¡]Linux¡^"
+echo "?? ï¿½Ò°ï¿½ Interval Timer MVP ï¿½Mï¿½×¡]Linuxï¿½^"
 echo "=========================================="
 
-# ¤Á´«¦Ü¸}¥»©Ò¦b¥Ø¿ý
+# ï¿½ï¿½ï¿½ï¿½ï¿½Ü¸}ï¿½ï¿½ï¿½Ò¦bï¿½Ø¿ï¿½
 cd "$(dirname "$0")"
 
-# Step 1: ½T«O Python3 ¦s¦b
+# Step 1: ï¿½Tï¿½O Python3 ï¿½sï¿½b
 if ! command -v python3 &>/dev/null; then
-  echo "? ½Ð¥ý¦w¸Ë Python3"
+  echo "? ï¿½Ð¥ï¿½ï¿½wï¿½ï¿½ Python3"
   exit 1
 fi
 
-# Step 2: ÀË¬d pip
+# Step 2: ï¿½Ë¬d pip
 if ! command -v pip3 &>/dev/null; then
-  echo "? pip3 ¥¼¦w¸Ë¡A½Ð¥ý¦w¸Ë pip"
+  echo "? pip3 ï¿½ï¿½ï¿½wï¿½Ë¡Aï¿½Ð¥ï¿½ï¿½wï¿½ï¿½ pip"
   exit 1
 fi
 
-# Step 3: ¦w¸Ë requirements.txt ¤º®M¥ó¡]¶È²Ä¤@¦¸»Ý­n¡^
-echo "?? ¦w¸Ë Python ¨Ì¿à¡]requirements.txt¡^..."
+# Step 3: ï¿½wï¿½ï¿½ requirements.txt ï¿½ï¿½ï¿½Mï¿½ï¿½]ï¿½È²Ä¤@ï¿½ï¿½ï¿½Ý­nï¿½^
+echo "?? ï¿½wï¿½ï¿½ Python ï¿½Ì¿ï¿½]requirements.txtï¿½^..."
 pip3 install -r requirements.txt
 
-# Step 4: °õ¦æ¾E²¾¡]¦pªG¬Oªì¦¸³¡¸p¡^
-echo "?? °õ¦æ Django ¸ê®Æ®w¾E²¾..."
+# Step 4: ï¿½ï¿½ï¿½ï¿½Eï¿½ï¿½ï¿½]ï¿½pï¿½Gï¿½Oï¿½ì¦¸ï¿½ï¿½ï¿½pï¿½^
+echo "?? ï¿½ï¿½ï¿½ï¿½ Django ï¿½ï¿½Æ®wï¿½Eï¿½ï¿½..."
 # python3 manage.py makemigrations timers
 # python3 manage.py migrate
 
-# Step 5: ±Ò°Ê¦øªA¾¹
-echo "?? ±Ò°Ê Django ¦øªA¾¹¡Ghttp://0.0.0.0:8000"
+sudo nginx -t
+sudo systemctl reload nginx
+
+# Step 5: ï¿½Ò°Ê¦ï¿½ï¿½Aï¿½ï¿½
+echo "?? ï¿½Ò°ï¿½ Django ï¿½ï¿½ï¿½Aï¿½ï¿½ï¿½Ghttp://0.0.0.0:8000"
 # python3 manage.py runserver 0.0.0.0:8000
 
 gunicorn intervaltimer.wsgi:application --bind 0.0.0.0:8000
