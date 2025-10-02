@@ -9,7 +9,7 @@
   <title>間歇時鐘 MVP</title>
   <style>
     body { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto; margin:0; background:#0b0f14; color:#e6eef7;}
-    header { padding:12px 16px; border-bottom:1px solid #1f2937; display:flex; gap:16px; align-items:center; }
+    header { padding:12px 16px; border-bottom:1px solid #1f2937; display:flex; gap:16px; align-items:flex-end; flex-wrap:wrap; }
     header h1 { font-size:18px; margin:0; }
     nav button { background:#111827; border:1px solid #374151; padding:8px 12px; border-radius:8px; color:#cbd5e1; cursor:pointer;}
     nav button.active { background:#2563eb; border-color:#2563eb; color:white;}
@@ -126,17 +126,52 @@
       background-color: #f0f0f0;
     }
 
+    #profile-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.6);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      z-index: 2000;
+    }
+
+    #profile-modal .modal-card {
+      background: #0b1220;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 20px;
+      max-width: 520px;
+      width: 100%;
+    }
+
+    #profile-modal label {
+      display: block;
+      margin-top: 12px;
+    }
+
+    #profile-modal input, #profile-modal select {
+      width: 100%;
+      margin-top: 6px;
+    }
+
   </style>
 </head>
 <body>
 <header>
-  <h1>⏱️ 間歇時鐘 MVP</h1>
+  <div style="display:flex; flex-direction:column; gap:4px;">
+    <h1>⏱️ 間歇時鐘 MVP</h1>
+    <div id="user-nickname" class="muted">歡迎使用者</div>
+  </div>
   <nav>
     <button id="tab-community" class="active">社群 Community</button>
     <button id="tab-team">團隊 Your Team</button>
     <button id="tab-your">個人 Your Timer</button>
   </nav>
   <div style="margin-left:auto;" class="row">
+    <button id="btn-profile" class="btn secondary">個人設定</button>
+    <button id="btn-logout" class="btn secondary">登出</button>
     <button id="btn-new" class="btn">＋ 新建時鐘</button>
     <button class="btn secondary" onclick="triggerImportJSON()">⭳ 匯入時鐘</button>
   </div>
@@ -161,7 +196,37 @@
     <div id="your-grid" class="grid"></div>
   </section>
 
-  <div class="footer">MVP：前端使用 Web Speech API（需手勢啟動音訊），後端為 Django + DRF。此版本以 cookie 辨識擁有者，免登入。</div>
+  <div class="footer">登入後可同步私人時鐘並自訂個人資料。訪客帳號僅支援建立公開時鐘。</div>
+</div>
+
+<!-- Profile Modal -->
+<div id="profile-modal">
+  <div class="modal-card">
+    <div class="row" style="justify-content:space-between; align-items:center;">
+      <h3 style="margin:0;">個人設定</h3>
+      <button class="btn secondary" onclick="closeProfileModal()">關閉</button>
+    </div>
+    <p class="muted" style="margin-top:8px;">除暱稱外，其餘欄位皆為選填，方便調整教練或團隊顯示資訊。</p>
+    <label>暱稱
+      <input id="pf-display-name" placeholder="輸入你想被顯示的名稱" />
+    </label>
+    <label>性別
+      <input id="pf-gender" placeholder="例如：男、女、非二元" />
+    </label>
+    <label>年齡
+      <input id="pf-age" type="number" min="0" placeholder="年齡（可留空）" />
+    </label>
+    <label>身高 (cm)
+      <input id="pf-height" type="number" min="0" step="0.1" placeholder="身高（公分）" />
+    </label>
+    <label>體重 (kg)
+      <input id="pf-weight" type="number" min="0" step="0.1" placeholder="體重（公斤）" />
+    </label>
+    <div class="row" style="justify-content:flex-end; margin-top:16px;">
+      <button class="btn secondary" onclick="closeProfileModal()">取消</button>
+      <button class="btn" id="btn-profile-save">儲存</button>
+    </div>
+  </div>
 </div>
 
 <!-- Editor Dialog -->
@@ -198,7 +263,95 @@
 
 <script>
 const $ = (q)=>document.querySelector(q);
-const api = (url, opt={}) => fetch(url, Object.assign({headers:{'Content-Type':'application/json'}}, opt));
+
+function getCookie(name) {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop().split(';').shift();
+  return '';
+}
+
+const SAFE_METHODS = ['GET','HEAD','OPTIONS','TRACE'];
+
+async function api(url, opt={}) {
+  const options = Object.assign({method: 'GET'}, opt);
+  options.headers = Object.assign({'Content-Type': 'application/json'}, options.headers || {});
+  options.credentials = 'same-origin';
+  const method = (options.method || 'GET').toUpperCase();
+  if (!SAFE_METHODS.includes(method)) {
+    options.headers['X-CSRFToken'] = getCookie('csrftoken');
+  }
+  const response = await fetch(url, options);
+  if (response.status === 401) {
+    window.location.href = '/login/';
+    throw new Error('未登入');
+  }
+  return response;
+}
+
+let currentUser = null;
+
+async function fetchCurrentUser(){
+  const res = await api('/api/auth/me/');
+  currentUser = await res.json();
+  updateUserBadge();
+  fillProfileForm();
+}
+
+function updateUserBadge(){
+  const el = $('#user-nickname');
+  if(!el) return;
+  if(!currentUser){
+    el.textContent = '歡迎使用者';
+    return;
+  }
+  const name = currentUser.display_name || (currentUser.is_guest ? '訪客使用者' : '未命名使用者');
+  el.textContent = `👋 ${name}`;
+}
+
+function fillProfileForm(){
+  if(!currentUser) return;
+  $('#pf-display-name').value = currentUser.display_name || '';
+  $('#pf-gender').value = currentUser.gender || '';
+  $('#pf-age').value = currentUser.age ?? '';
+  $('#pf-height').value = currentUser.height_cm ?? '';
+  $('#pf-weight').value = currentUser.weight_kg ?? '';
+}
+
+function openProfileModal(){
+  fillProfileForm();
+  const modal = $('#profile-modal');
+  if(modal){
+    modal.style.display = 'flex';
+  }
+}
+
+function closeProfileModal(){
+  const modal = $('#profile-modal');
+  if(modal){
+    modal.style.display = 'none';
+  }
+}
+
+async function saveProfile(){
+  const payload = {
+    display_name: $('#pf-display-name').value.trim(),
+    gender: $('#pf-gender').value.trim(),
+    age: $('#pf-age').value ? Number($('#pf-age').value) : null,
+    height_cm: $('#pf-height').value ? Number($('#pf-height').value) : null,
+    weight_kg: $('#pf-weight').value ? Number($('#pf-weight').value) : null,
+  };
+  const res = await api('/api/auth/me/', {method:'PATCH', body: JSON.stringify(payload)});
+  if(!res.ok){
+    const data = await res.json().catch(()=>({detail:'更新失敗'}));
+    alert(data.detail || '儲存失敗');
+    return;
+  }
+  currentUser = await res.json();
+  updateUserBadge();
+  closeProfileModal();
+  alert('個人資料已更新');
+}
 
 // Tabs
 function showTab(id){
@@ -210,6 +363,13 @@ function showTab(id){
 $('#tab-community').onclick = ()=>{ showTab('community'); loadCommunity(); };
 $('#tab-team').onclick = ()=>{ showTab('team'); };
 $('#tab-your').onclick = ()=>{ showTab('your'); loadMine(); };
+$('#btn-profile').onclick = ()=>{ openProfileModal(); };
+$('#btn-profile-save').onclick = ()=>{ saveProfile(); };
+$('#profile-modal').addEventListener('click', (e)=>{ if(e.target.id==='profile-modal'){ closeProfileModal(); }});
+$('#btn-logout').onclick = async ()=>{
+  await api('/api/auth/logout/', {method:'POST', body: JSON.stringify({})});
+  window.location.href = '/login/';
+};
 
 // Loaders
 async function loadCommunity(){
@@ -219,6 +379,7 @@ async function loadCommunity(){
   data.forEach(c=>grid.appendChild(clockCard(c, false)));
 }
 async function loadMine(){
+  if(!currentUser) return;
   const res = await api('/api/clocks/?mine=1');
   const data = await res.json();
   const grid = $('#your-grid'); grid.innerHTML = '';
@@ -316,10 +477,14 @@ function exportClockJSON(clock) {
 }
 // Create new
 $('#btn-new').onclick = async ()=>{
-  const payload = {name:'未命名時鐘', repeat_count:1, is_public:false, bgm_url:null, stages:[]};
+  const payload = {name:'未命名時鐘', repeat_count:1, is_public: currentUser && currentUser.is_guest ? true : false, bgm_url:null, stages:[]};
   const res = await api('/api/clocks/', {method:'POST', body: JSON.stringify(payload)});
-  const c = await res.json();
-  openEditor(c);
+  const data = await res.json();
+  if(!res.ok){
+    alert(data.detail || '建立失敗');
+    return;
+  }
+  openEditor(data);
 };
 
 // Fork
@@ -340,7 +505,11 @@ function openEditor(c){
   $('#ed-title').textContent = `編輯：${c.name}`;
   $('#ed-name').value = c.name;
   $('#ed-repeat').value = c.repeat_count;
-  $('#ed-public').checked = !!c.is_public;
+  const isGuest = currentUser && currentUser.is_guest;
+  const publicToggle = $('#ed-public');
+  publicToggle.checked = isGuest ? true : !!c.is_public;
+  publicToggle.disabled = !!isGuest;
+  publicToggle.parentElement.title = isGuest ? '訪客帳號只能建立公開時鐘' : '';
   $('#ed-bgm').value = c.bgm_url || '';
   addWarmUpIfNeeded();
   renderStages();
@@ -443,9 +612,11 @@ async function saveClock(){
   const method = isNew ? 'POST' : 'PUT';
 
   const res = await api(url, { method, body: JSON.stringify(currentClock) });
-  if(!res.ok){ alert('儲存失敗'); return; }
-
   const saved = await res.json();
+  if(!res.ok){
+    alert(saved.detail || '儲存失敗');
+    return;
+  }
   currentClock = saved;       // 重要：POST 後拿回 id，之後才會用 PUT
   alert('已儲存');
   hideEditor();
@@ -454,8 +625,14 @@ async function saveClock(){
 
 async function deleteClock(){
   if(!confirm('確定刪除此時鐘？')) return;
-  await api(`/api/clocks/${currentClock.id}/`, {method:'DELETE'});
-  hideEditor(); loadMine();
+  const res = await api(`/api/clocks/${currentClock.id}/`, {method:'DELETE', body: JSON.stringify({})});
+  if(res.ok){
+    hideEditor();
+    loadMine();
+  }else{
+    const data = await res.json().catch(()=>({detail:'刪除失敗'}));
+    alert(data.detail || '刪除失敗');
+  }
 }
 
 // Player (simple, setInterval-based UI updates, with Web Speech & Audio for cues)
@@ -673,9 +850,17 @@ function togglePause() {
 }
 
 
-// initial loads
-loadCommunity();
-loadMine();
+async function init(){
+  try{
+    await fetchCurrentUser();
+    await loadCommunity();
+    await loadMine();
+  }catch(err){
+    console.error(err);
+  }
+}
+
+init();
 
 // Enter search
 $('#search').addEventListener('keydown', e=>{

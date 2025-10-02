@@ -1,4 +1,5 @@
 
+import os
 
 from pathlib import Path
 
@@ -9,7 +10,7 @@ ROOT_URLCONF = 'intervaltimer.urls'
 LOGIN_URL = '/accounts/login/'
 LOGIN_REDIRECT_URL = '/'
 
-ALLOWED_HOSTS = ['139.162.85.29', 'twtools.xyz']
+ALLOWED_HOSTS = ['139.162.85.29', 'twtools.xyz', 'localhost', '127.0.0.1']
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -51,6 +52,8 @@ LOGOUT_REDIRECT_URL = '/login/'
 # FORCE_SCRIPT_NAME = '/intervaltimermvp'
 USE_X_FORWARDED_HOST = True
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID', '')
 
 
 

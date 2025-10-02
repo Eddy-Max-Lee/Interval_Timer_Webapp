@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>登入 - 間歇時鐘</title>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <style>
+    body { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto; background:#0b0f14; color:#e6eef7; margin:0; }
+    main { max-width:420px; margin:8vh auto; background:#111827; padding:32px; border-radius:16px; border:1px solid #1f2937; }
+    h1 { margin-top:0; font-size:24px; }
+    button { width:100%; padding:10px 14px; font-size:16px; border:none; border-radius:10px; cursor:pointer; }
+    .btn-guest { background:#2563eb; color:#fff; margin-top:12px; }
+    .btn-guest.secondary { background:#374151; }
+    .muted { color:#94a3b8; font-size:14px; margin-top:16px; }
+    label { display:block; margin-top:12px; }
+    input { width:100%; padding:10px; border-radius:10px; border:1px solid #334155; background:#0b1220; color:#e2e8f0; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>登入你的間歇時鐘</h1>
+    <p>使用 Google 帳號即可同步你的私人時鐘，或是以訪客身份快速體驗。</p>
+
+    <div id="g_id_onload"
+         data-client_id="{{ GOOGLE_CLIENT_ID }}"
+         data-context="signin"
+         data-ux_mode="popup"
+         data-callback="handleCredential"></div>
+    <div class="g_id_signin"
+         data-type="standard"
+         data-shape="rectangular"
+         data-theme="outline"
+         data-text="signin_with"
+         data-size="large"
+         data-logo_alignment="center"
+         style="display:flex; justify-content:center;"></div>
+
+    <button class="btn-guest" id="btn-guest">以訪客身份繼續</button>
+
+    <div class="muted">登入後仍可於系統中設定暱稱、性別、年齡、身高與體重等資訊。</div>
+
+    <label for="guest-name">訪客暱稱（可留空）</label>
+    <input id="guest-name" maxlength="50" placeholder="例如：路過的勇者">
+
+    <button class="btn-guest secondary" id="btn-login-redirect">已有登入？回主頁</button>
+  </main>
+
+  <script>
+    function getCookie(name) {
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return parts.pop().split(';').shift();
+      return '';
+    }
+
+    async function postJSON(url, data) {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': getCookie('csrftoken'),
+        },
+        credentials: 'same-origin',
+        body: JSON.stringify(data || {}),
+      });
+      return res;
+    }
+
+    window.handleCredential = async function(response) {
+      const res = await postJSON('/api/auth/google/', { credential: response.credential });
+      if (res.ok) {
+        window.location.href = '/';
+      } else {
+        const data = await res.json().catch(()=>({detail:'未知錯誤'}));
+        alert(data.detail || '登入失敗');
+      }
+    };
+
+    document.getElementById('btn-guest').addEventListener('click', async () => {
+      const display_name = document.getElementById('guest-name').value.trim();
+      const res = await postJSON('/api/auth/guest/', { display_name });
+      if (res.ok) {
+        window.location.href = '/';
+      } else {
+        const data = await res.json().catch(()=>({detail:'未知錯誤'}));
+        alert(data.detail || '訪客登入失敗');
+      }
+    });
+
+    document.getElementById('btn-login-redirect').addEventListener('click', () => {
+      window.location.href = '/';
+    });
+  </script>
+</body>
+</html>
