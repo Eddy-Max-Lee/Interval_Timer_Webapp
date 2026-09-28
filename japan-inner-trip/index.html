@@ -1,0 +1,691 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Japan Inner Trip｜你真正適合的日本旅行</title>
+  <meta name="description" content="用幾個直覺問題找到最適合你的日本目的地，以及最適合去北海道的季節。" />
+  <style>
+    :root{
+      --bg:#f6f2ed;
+      --card:#fffdfa;
+      --ink:#26221f;
+      --muted:#7b746c;
+      --line:#e8dfd7;
+      --accent:#e37a68;
+      --accent2:#5f7489;
+      --shadow:0 18px 52px rgba(43,32,22,.10);
+      --radius:28px;
+    }
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{
+      margin:0;
+      color:var(--ink);
+      background:
+        radial-gradient(circle at 0% 0%, rgba(227,122,104,.13), transparent 24rem),
+        radial-gradient(circle at 100% 10%, rgba(95,116,137,.12), transparent 26rem),
+        var(--bg);
+      font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC","Segoe UI",sans-serif;
+      min-height:100vh;
+    }
+    img{display:block;max-width:100%}
+    button{font:inherit}
+    .wrap{width:min(940px, calc(100% - 28px)); margin:auto}
+    header{padding:54px 0 28px}
+    .eyebrow{
+      display:inline-flex;align-items:center;gap:8px;
+      padding:8px 12px;border-radius:999px;background:#fff7f3;border:1px solid #f0d7d0;
+      color:#aa554a;font-size:13px;font-weight:800;
+    }
+    h1{font-size:clamp(34px,6vw,64px);line-height:1.03;letter-spacing:-.045em;margin:18px 0 14px}
+    .lead{max-width:760px;font-size:18px;line-height:1.8;color:var(--muted)}
+    .menu{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin:28px 0 56px}
+    .mode{
+      text-align:left;border:0;border-radius:24px;padding:25px;background:rgba(255,255,255,.84);
+      box-shadow:var(--shadow);cursor:pointer;color:var(--ink);transition:.2s transform,.2s box-shadow;
+    }
+    .mode:hover{transform:translateY(-3px);box-shadow:0 22px 68px rgba(43,32,22,.14)}
+    .mode .icon{font-size:34px;display:block;margin-bottom:18px}
+    .mode strong{display:block;font-size:23px;margin-bottom:10px}
+    .mode span{line-height:1.65;color:var(--muted)}
+    .panel{display:none;padding-bottom:70px}
+    .panel.active{display:block}
+    .quiz-card,.result-card{
+      background:rgba(255,253,250,.94);
+      border:1px solid rgba(228,219,209,.92);
+      border-radius:var(--radius);
+      padding:clamp(22px,4vw,38px);
+      box-shadow:var(--shadow);
+      backdrop-filter:blur(12px);
+    }
+    .topline{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
+    .mini{font-size:14px;color:var(--muted)}
+    .progress{height:10px;border-radius:999px;background:#ebe2d9;overflow:hidden;margin-bottom:28px}
+    .bar{height:100%;width:0;background:linear-gradient(90deg,var(--accent),#efb272);transition:.32s}
+    .q{font-size:clamp(24px,4vw,36px);line-height:1.33;margin:0 0 24px;letter-spacing:-.02em}
+    .subtle{margin:-6px 0 18px;color:#8a8179;font-size:14px;line-height:1.6}
+    .answers{display:grid;gap:12px}
+    .answer{
+      width:100%;border:1px solid var(--line);background:#fff;border-radius:18px;padding:18px 19px;
+      text-align:left;cursor:pointer;transition:.16s;border-color:#e6ddd4;color:var(--ink);
+      display:flex;gap:13px;align-items:flex-start;
+    }
+    .answer:hover{border-color:#c8a699;transform:translateY(-1px);background:#fffaf7}
+    .answer b{
+      flex:0 0 29px;width:29px;height:29px;border-radius:50%;display:grid;place-items:center;
+      background:#f3ece6;color:#7a6256;font-size:13px
+    }
+
+    .image-grid{
+      display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;
+    }
+    .image-option{
+      border:1px solid var(--line);border-radius:22px;overflow:hidden;background:#fff;cursor:pointer;
+      transition:.18s transform,.18s border-color,.18s box-shadow; text-align:left; padding:0;
+      box-shadow:0 6px 16px rgba(0,0,0,.03);
+    }
+    .image-option:hover{transform:translateY(-2px);border-color:#c8a699;box-shadow:0 12px 28px rgba(0,0,0,.07)}
+    .image-option .ph{
+      aspect-ratio: 16 / 10;
+      background:#ddd;
+      border-bottom:1px solid var(--line);
+      overflow:hidden;
+    }
+    .image-option .ph img{
+      width:100%;height:100%;object-fit:cover;
+    }
+    .image-option .meta{
+      padding:14px 14px 16px;display:flex;gap:10px;align-items:flex-start;
+    }
+    .image-option .meta b{
+      flex:0 0 28px;width:28px;height:28px;border-radius:50%;
+      display:grid;place-items:center;background:#f3ece6;color:#7a6256;font-size:13px
+    }
+    .image-option .meta span{line-height:1.55;color:var(--ink)}
+    .helper{
+      margin-top:10px;font-size:13px;color:#8b827a;
+    }
+
+    .back{margin-top:22px;border:0;background:transparent;color:var(--muted);cursor:pointer;padding:8px 0}
+    .result-kicker{font-size:14px;font-weight:900;color:var(--accent);letter-spacing:.12em}
+    .result-card h2{font-size:clamp(34px,5vw,56px);line-height:1.08;letter-spacing:-.04em;margin:8px 0 10px}
+    .result-desc{font-size:18px;line-height:1.8;color:#645d57}
+    .tags{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 26px}
+    .tag{padding:8px 12px;border-radius:999px;background:#f1ebe5;color:#645850;font-size:14px}
+    .insight{padding:20px;border-radius:20px;background:#f6f1eb;margin-top:16px;line-height:1.8}
+    .insight strong{display:block;margin-bottom:6px}
+    .scorebox{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:24px 0}
+    .score{background:#fff;border:1px solid var(--line);padding:13px;border-radius:16px;text-align:center}
+    .score small{display:block;color:var(--muted);margin-bottom:4px}
+    .score b{font-size:18px}
+    .actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:26px}
+    .primary,.secondary{border:0;border-radius:14px;padding:13px 17px;cursor:pointer;font-weight:800}
+    .primary{background:var(--ink);color:#fff}
+    .secondary{background:#eee6de;color:var(--ink)}
+    .note{font-size:13px;color:#8b827b;line-height:1.65;margin-top:18px}
+    footer{padding:18px 0 48px;color:#9b928b;font-size:13px;text-align:center}
+    @media (max-width:720px){
+      header{padding-top:34px}
+      .menu{grid-template-columns:1fr}
+      .scorebox{grid-template-columns:repeat(2,1fr)}
+    }
+    @media (max-width:560px){
+      .image-grid{grid-template-columns:1fr}
+      .quiz-card,.result-card{border-radius:24px}
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="eyebrow">✦ 旅行心理測驗 v2</span>
+    <h1>你真正想去的日本，<br>可能跟你想像的不太一樣。</h1>
+    <p class="lead">我把測驗調整成更像「旅遊心理測驗」：北海道季節題加入圖片卡，去日本哪裡也加入影視作品偏好，用你真正會被什麼氛圍打中，來推測目的地與旅行狀態。</p>
+  </header>
+
+  <section id="home">
+    <div class="menu">
+      <button class="mode" onclick="startQuiz('japan')">
+        <span class="icon">🗾</span>
+        <strong>我最適合去日本哪裡？</strong>
+        <span>18 題。加入影視作品偏好、旅行節奏、美食／自然／文化傾向，找到最適合你的日本地區。</span>
+      </button>
+      <button class="mode" onclick="startQuiz('hokkaido')">
+        <span class="icon">❄️</span>
+        <strong>我最適合哪個季節去北海道？</strong>
+        <span>14 題。用場景圖片、溫度接受度、景色偏好與活動型態，找到最對味的北海道季節。</span>
+      </button>
+    </div>
+  </section>
+
+  <section id="quiz" class="panel">
+    <div class="quiz-card">
+      <div class="topline">
+        <span id="quizTitle" class="mini"></span>
+        <span id="counter" class="mini"></span>
+      </div>
+      <div class="progress"><div id="bar" class="bar"></div></div>
+      <h2 id="question" class="q"></h2>
+      <p id="subtle" class="subtle"></p>
+      <div id="answers" class="answers"></div>
+      <button id="backBtn" class="back" onclick="goBack()">← 上一題</button>
+    </div>
+  </section>
+
+  <section id="result" class="panel">
+    <div class="result-card">
+      <div id="resultKicker" class="result-kicker"></div>
+      <h2 id="resultTitle"></h2>
+      <p id="resultDesc" class="result-desc"></p>
+      <div id="tags" class="tags"></div>
+      <div id="scores" class="scorebox"></div>
+      <div class="insight">
+        <strong>你內心深處其實在找：</strong>
+        <span id="innerText"></span>
+      </div>
+      <div class="insight">
+        <strong>旅行時最容易踩的雷：</strong>
+        <span id="warningText"></span>
+      </div>
+      <div class="actions">
+        <button class="primary" onclick="restartSame()">再測一次</button>
+        <button class="secondary" onclick="goHome()">換另一個測驗</button>
+        <button class="secondary" onclick="copyResult()">複製結果</button>
+      </div>
+      <p class="note">※ 目前圖片題我先做成內建風格插圖版，這樣可以確保單檔 HTML 直接打開就能用。若你要，我下一版可以再幫你換成真實網路照片版。</p>
+    </div>
+  </section>
+
+  <footer>Japan Inner Trip · a small site for people who plan trips with their feelings first.</footer>
+</div>
+
+<script>
+const quizzes = {
+  japan: {
+    title: "最適合去日本哪裡？",
+    dimensions: ["urban","culture","nature","food","slow"],
+    questions: [
+      {text:"如果明天突然多出三天假，你最想？", options:[
+        ["逛到腳酸也甘願，越熱鬧越好","urban"],
+        ["住進安靜小鎮，散步、發呆","slow"],
+        ["直接去看山海，離城市越遠越好","nature"],
+        ["吃遍當地名物，晚上繼續喝","food"]
+      ]},
+      {text:"旅行中，哪個瞬間最讓你有「活著真好」的感覺？", options:[
+        ["凌晨還亮著的街","urban"],
+        ["寺院、老街、木造建築","culture"],
+        ["風景突然遼闊起來","nature"],
+        ["吃到一口超乎預期的東西","food"]
+      ]},
+      {text:"哪種影視氛圍最容易打中你？", subtle:"這題不是考片單，是看你容易被哪種世界吸引。", options:[
+        ["節奏快、都會感強、人物很多的作品","urban"],
+        ["有老街、四季、美感細節的作品","culture"],
+        ["山海、公路、鄉間、療癒感作品","nature"],
+        ["圍繞吃飯、人情味、深夜小店的作品","food"]
+      ]},
+      {text:"如果旅館晚上只能播一部作品，你會選？", subtle:"用偏好來判斷你更容易進入哪種旅行情緒。", options:[
+        ["《First Love》那種城市與情感交錯感","urban"],
+        ["《舞伎家的料理人》那種京都日常與美感","culture"],
+        ["《小森林》那種鄉間節奏與自然感","nature"],
+        ["《深夜食堂／孤獨的美食家》那種吃飯即故事","food"]
+      ]},
+      {text:"你比較能接受哪一種累？", options:[
+        ["走兩萬步但看到超多東西","urban"],
+        ["搭很久的車只為了一個景","nature"],
+        ["排隊等名店","food"],
+        ["早起去看沒有人的景點","slow"]
+      ]},
+      {text:"你對『觀光景點』的態度？", options:[
+        ["第一次去就該看經典","culture"],
+        ["熱門也沒關係，好玩最重要","urban"],
+        ["最好避開人群","slow"],
+        ["只要景色夠強，人多也可以","nature"]
+      ]},
+      {text:"選一個晚上。", options:[
+        ["酒吧、夜景、便利商店宵夜","urban"],
+        ["居酒屋、燒鳥、拉麵","food"],
+        ["溫泉旅館，十點就睡","slow"],
+        ["海邊或山裡，看星星","nature"]
+      ]},
+      {text:"你最不能忍受的旅行狀況？", options:[
+        ["交通不方便","urban"],
+        ["人太多、一直排隊","slow"],
+        ["沒有好吃的","food"],
+        ["景色普通、沒有記憶點","nature"]
+      ]},
+      {text:"如果只能拍一種照片？", options:[
+        ["霓虹街景與人群","urban"],
+        ["神社、町屋、歷史感","culture"],
+        ["海岸、山、湖、雪","nature"],
+        ["食物與市場","food"]
+      ]},
+      {text:"你現在的人生狀態比較像？", options:[
+        ["需要刺激，想把自己重新開機","urban"],
+        ["很累，想安靜消失幾天","slow"],
+        ["有點卡住，想得到新的視角","nature"],
+        ["想好好獎勵自己","food"]
+      ]},
+      {text:"哪種角色視角最吸引你？", subtle:"這題用來抓你是想『參與』還是『退開』。", options:[
+        ["在城市中快速穿梭、每天都可能有新事發生","urban"],
+        ["在舊街區慢慢生活、理解地方脈絡","culture"],
+        ["離開原本生活，到遠方重新感受世界","nature"],
+        ["一邊吃、一邊遇見人、一邊被治癒","food"]
+      ]},
+      {text:"你理想的行程密度？", options:[
+        ["早九到晚十一，塞滿沒關係","urban"],
+        ["一天 2–3 個重點最好","culture"],
+        ["一天只安排一件事也可以","slow"],
+        ["看天氣和心情，隨時改","nature"]
+      ]},
+      {text:"對購物的感覺？", options:[
+        ["旅行重要主線之一","urban"],
+        ["會買設計、工藝或地方限定","culture"],
+        ["可有可無","nature"],
+        ["主要買吃的","food"]
+      ]},
+      {text:"哪個詞最吸引你？", options:[
+        ["效率","urban"],
+        ["餘韻","culture"],
+        ["自由","nature"],
+        ["滿足","food"]
+      ]},
+      {text:"你比較喜歡哪種空間？", options:[
+        ["高樓、地下街、大車站","urban"],
+        ["古城、庭園、巷弄","culture"],
+        ["港口、山谷、海岸","nature"],
+        ["市場、商店街、屋台","food"]
+      ]},
+      {text:"旅行最重要的是？", options:[
+        ["選擇夠多，不怕無聊","urban"],
+        ["有故事、有歷史、有細節","culture"],
+        ["可以真正離開日常","nature"],
+        ["吃得超級好","food"]
+      ]},
+      {text:"你對『名店』的耐心？", options:[
+        ["值得就排","food"],
+        ["最多 20 分鐘","urban"],
+        ["不排，旁邊隨便找","slow"],
+        ["我寧願去景點","nature"]
+      ]},
+      {text:"最後一題：你最希望旅行回來後變成哪種狀態？", options:[
+        ["重新有能量","urban"],
+        ["心變得更安定","slow"],
+        ["覺得世界又變大了","nature"],
+        ["覺得人生有被好好款待","food"]
+      ]}
+    ],
+    results:[
+      {key:"urban", title:"東京", kicker:"CITY ENERGY", tags:["刺激","選擇很多","夜生活","效率"], desc:"你需要的不是單純休息，而是大量新訊息把腦袋重新點亮。東京的密度、速度與無限分支，會讓你在『今天到底還能發生什麼？』的感覺裡重新有電。", inner:"你其實在找「重新啟動感」。最近如果生活有點平，你會比一般人更需要陌生感、速度與選擇權來恢復精神。", warning:"把行程排得太滿。你很容易因為怕錯過而把旅行變成 KPI。留一個晚上完全不排，通常反而會成為記憶最深的一段。"},
+      {key:"culture", title:"京都・金澤", kicker:"QUIET AESTHETICS", tags:["文化","美感","散步","細節"], desc:"你對旅行的要求不只『好玩』，還希望它有脈絡、有美感、有值得慢慢看的細節。京都與金澤都適合你把速度降下來，靠街道、工藝、庭園與歷史累積餘韻。", inner:"你其實在找「秩序與意義」。你想暫時離開資訊噪音，進到一個有脈絡、有美感、有時間感的世界。", warning:"只跑熱門景點。你的滿足感其實很吃『空白』，比起多塞兩個寺院，你更需要留時間在巷弄、茶屋或庭園坐久一點。"},
+      {key:"nature", title:"北海道・東北", kicker:"BIG LANDSCAPE", tags:["自然","公路感","自由","遼闊"], desc:"你真正會被治癒的通常不是漂亮咖啡廳，而是尺度夠大的風景。北海道或東北的距離、山海與季節變化，很適合你把腦袋從日常尺寸拉回更大的世界。", inner:"你其實在找「空間感」。你想離開被工作、訊息與城市切碎的注意力，重新感覺自己可以呼吸、可以走遠。", warning:"低估交通。你會想追求自由，但日本鄉間班次與距離很現實；預留交通 buffer，或直接自駕，會比硬塞點位更適合你。"},
+      {key:"food", title:"大阪・福岡", kicker:"EAT FIRST, THINK LATER", tags:["美食","熱鬧","親切","夜晚"], desc:"對你來說，旅行最重要的記憶常常可以被一句『那家真的超好吃』喚醒。大阪與福岡有很強的街頭飲食、夜間氣氛和低門檻快樂，適合你一路吃、一路逛、一路聊天。", inner:"你其實在找「被生活款待的感覺」。你不一定需要宏大的療癒，你要的是很多小小的、立刻有回報的快樂。", warning:"為了名店犧牲太多時間。你很容易追著清單吃，最後肚子飽了、行程卻很累。保留幾餐現場看心情決定。"},
+      {key:"slow", title:"四國・瀨戶內・溫泉小鎮", kicker:"SLOW RESET", tags:["安靜","慢旅行","溫泉","發呆"], desc:"你最需要的是降低外界要求。比起『去了哪裡』，你更重視自己在旅途中有沒有真的鬆下來。四國、瀨戶內或溫泉小鎮的節奏會比大城市更接近你現在需要的狀態。", inner:"你其實在找「被允許什麼都不做」。你可能已經很習慣處理事情、回應別人，旅行反而需要一個不用證明效率的地方。", warning:"又忍不住加行程。你最適合的玩法，是每天只設一個 anchor，其餘全部留白。"}
+    ]
+  },
+
+  hokkaido: {
+    title: "最適合哪個季節去北海道？",
+    dimensions: ["winter","spring","summer","autumn"],
+    questions: [
+      {text:"你可以接受零下溫度嗎？", options:[
+        ["可以，越有冬天感越好","winter"],
+        ["可以一點，但不要太硬核","spring"],
+        ["最好舒服，不想受罪","summer"],
+        ["偏涼最棒","autumn"]
+      ]},
+      {text:"你最想在旅程中看到哪個畫面？", subtle:"改成圖片卡，讓使用者用第一直覺選。", type:"image", options:[
+        {label:"整座城市被雪覆住", key:"winter", scene:"winter-city"},
+        {label:"櫻花、融雪、剛醒來的草地", key:"spring", scene:"spring-field"},
+        {label:"花田、藍天、綠色丘陵", key:"summer", scene:"summer-field"},
+        {label:"紅葉、金色草原、初雪山頭", key:"autumn", scene:"autumn-hills"}
+      ]},
+      {text:"你對人潮的容忍度？", options:[
+        ["為了經典景色可以接受","summer"],
+        ["越少越好","spring"],
+        ["有節慶感反而更開心","winter"],
+        ["希望有氣氛但別太擠","autumn"]
+      ]},
+      {text:"北海道旅行最吸引你的核心是？", options:[
+        ["雪國感","winter"],
+        ["萬物甦醒的清新感","spring"],
+        ["公路旅行與大自然","summer"],
+        ["食物與季節感","autumn"]
+      ]},
+      {text:"選一個活動。", options:[
+        ["滑雪／雪地活動","winter"],
+        ["賞櫻＋泡湯","spring"],
+        ["自駕看花田與湖泊","summer"],
+        ["看楓葉＋吃海鮮","autumn"]
+      ]},
+      {text:"如果要把北海道做成一張明信片，你最想留下哪一張？", type:"image", subtle:"再用一次圖片題，抓更深一點的視覺偏好。", options:[
+        {label:"雪夜、小燈、溫泉蒸氣", key:"winter", scene:"winter-onsen"},
+        {label:"嫩綠、晚櫻、安靜小路", key:"spring", scene:"spring-road"},
+        {label:"大晴天、花海、公路延伸", key:"summer", scene:"summer-road"},
+        {label:"金黃樹海、湖面、微涼空氣", key:"autumn", scene:"autumn-lake"}
+      ]},
+      {text:"你對開車的態度？", options:[
+        ["雪地開車不太想","spring"],
+        ["我願意自駕跑很遠","summer"],
+        ["秋天自駕很可以","autumn"],
+        ["不開車也能玩就好","winter"]
+      ]},
+      {text:"旅行時，你比較怕哪個？", options:[
+        ["太冷","summer"],
+        ["太熱","autumn"],
+        ["景色不夠有特色","winter"],
+        ["店家或景點還沒全開","spring"]
+      ]},
+      {text:"你比較想吃什麼？", options:[
+        ["熱湯、拉麵、鍋物","winter"],
+        ["草莓、春季甜點、山菜","spring"],
+        ["哈密瓜、玉米、冰淇淋","summer"],
+        ["鮭魚卵、秋刀魚、螃蟹、南瓜","autumn"]
+      ]},
+      {text:"你希望行程的情緒是？", options:[
+        ["像電影一樣浪漫","winter"],
+        ["柔和、安靜、有點新開始","spring"],
+        ["自由、爽朗、一直往前開","summer"],
+        ["成熟、舒服、有一點感傷","autumn"]
+      ]},
+      {text:"如果遇到壞天氣？", options:[
+        ["下雪反而加分","winter"],
+        ["小雨可以，最好別太冷","spring"],
+        ["我很在意藍天","summer"],
+        ["陰天也有秋天味道","autumn"]
+      ]},
+      {text:"你最希望避開什麼？", options:[
+        ["酷寒與積雪","summer"],
+        ["暑假旺季與熱門花田人潮","autumn"],
+        ["景點色彩太單調","spring"],
+        ["短暫、變化快的天氣窗口","winter"]
+      ]},
+      {text:"你願意為了限定景色承擔多少不確定性？", options:[
+        ["很高，追雪就是要賭","winter"],
+        ["可以，花期不準也沒關係","spring"],
+        ["不要，我要穩定好玩","summer"],
+        ["可以接受，追楓本來就看運氣","autumn"]
+      ]},
+      {text:"直覺選一個詞。", options:[
+        ["沉浸","winter"],
+        ["新生","spring"],
+        ["自由","summer"],
+        ["餘韻","autumn"]
+      ]}
+    ],
+    results:[
+      {key:"winter", title:"冬季｜12月–2月", kicker:"SNOW WORLD", tags:["雪景","溫泉","浪漫","冬季活動"], desc:"你不是來北海道『看景點』，你是想進入另一個世界。冬季的雪、蒸氣、夜間燈光與溫泉最能滿足你對強烈季節感的需求。", inner:"你其實在找「徹底切換世界的感覺」。你需要旅行和日常差很多，才會真的覺得自己離開了原本的生活。", warning:"低溫、路滑與交通延誤都是真成本。若不熟雪地駕駛，優先用 JR、巴士或參加當地團。"},
+      {key:"spring", title:"春季｜4月下旬–5月", kicker:"SOFT RESTART", tags:["晚櫻","融雪","清爽","較安靜"], desc:"你適合北海道比較柔和的一面。春季沒有盛夏那麼張揚，也沒有冬季那麼硬派，適合賞花、散步、溫泉與慢慢看城市甦醒。", inner:"你其實在找「重新開始但不要太用力」。你需要的是輕盈、乾淨、有希望感的旅行。", warning:"北海道春天來得晚，花期也會年年變動；如果你把『一定要看到滿開』當唯一目標，壓力會很大。"},
+      {key:"summer", title:"夏季｜6月下旬–8月", kicker:"OPEN ROAD", tags:["花田","自駕","長日照","戶外"], desc:"你最適合把北海道當成一張巨大的開放地圖。夏季日照長、道路條件友善，花田、丘陵、湖泊與公路旅行的體驗最完整。", inner:"你其實在找「自由與擴張感」。你想一直往前走、看新的東西，而且不希望天氣本身變成旅行門檻。", warning:"薰衣草與暑假旺季會帶來明顯人潮與住宿壓力。熱門區域宜早訂，但每天仍不要排太多點。"},
+      {key:"autumn", title:"秋季｜9月–10月", kicker:"DEEP SEASON", tags:["紅葉","海鮮","涼爽","成熟感"], desc:"你喜歡層次勝過熱鬧。北海道秋季的紅葉、涼爽空氣、豐收食材與快速變化的自然景色，很適合重視季節感與飲食品質的你。", inner:"你其實在找「有餘韻的滿足」。你不一定要最熱門、最夢幻，但希望旅行結束後，還有一種很久散不掉的味道。", warning:"北海道幅員大，各地紅葉時間差很多；與其一次追全島，不如鎖定一個區域深玩。"}
+    ]
+  }
+};
+
+let currentType = null;
+let idx = 0;
+let score = {};
+let history = [];
+
+function svgScene(kind){
+  const presets = {
+    "winter-city": {
+      sky1:"#d5dfeb", sky2:"#f6fbff", ground:"#f4f7fa",
+      extra:`<rect x="0" y="320" width="900" height="180" fill="#eef4f8"/>
+             <rect x="120" y="180" width="110" height="170" rx="6" fill="#6e7c93"/>
+             <rect x="260" y="150" width="135" height="200" rx="6" fill="#8596aa"/>
+             <rect x="430" y="205" width="105" height="145" rx="6" fill="#72859c"/>
+             <rect x="570" y="165" width="150" height="185" rx="6" fill="#7f8da1"/>
+             <g fill="#f9e8a8">
+               <rect x="145" y="210" width="16" height="18"/><rect x="172" y="210" width="16" height="18"/><rect x="145" y="240" width="16" height="18"/><rect x="172" y="240" width="16" height="18"/>
+               <rect x="287" y="182" width="18" height="20"/><rect x="318" y="182" width="18" height="20"/><rect x="349" y="182" width="18" height="20"/>
+               <rect x="287" y="214" width="18" height="20"/><rect x="318" y="214" width="18" height="20"/><rect x="349" y="214" width="18" height="20"/>
+               <rect x="596" y="195" width="18" height="20"/><rect x="628" y="195" width="18" height="20"/><rect x="660" y="195" width="18" height="20"/>
+             </g>
+             <path d="M80 348 Q220 315 360 342 T660 336 T860 346 L860 500 L0 500 L0 348 Z" fill="#ffffff"/>
+             <g fill="#fff">
+               <circle cx="120" cy="90" r="4"/><circle cx="205" cy="130" r="5"/><circle cx="290" cy="85" r="4"/><circle cx="390" cy="118" r="6"/>
+               <circle cx="510" cy="82" r="4"/><circle cx="615" cy="112" r="5"/><circle cx="744" cy="92" r="6"/>
+             </g>`
+    },
+    "spring-field": {
+      sky1:"#dff1ff", sky2:"#fff7fb", ground:"#cfe8bf",
+      extra:`<rect x="0" y="305" width="900" height="195" fill="#bfe0a6"/>
+             <rect x="0" y="350" width="900" height="150" fill="#8fc47a"/>
+             <path d="M0 325 Q150 285 300 320 T600 315 T900 330 L900 500 L0 500 Z" fill="#dbeecb"/>
+             <g>
+               <rect x="180" y="210" width="12" height="120" fill="#7a5c44"/>
+               <circle cx="186" cy="190" r="38" fill="#ffd8e6"/><circle cx="156" cy="205" r="28" fill="#ffdfe9"/><circle cx="212" cy="215" r="30" fill="#ffcfe1"/>
+               <rect x="610" y="190" width="13" height="140" fill="#7a5c44"/>
+               <circle cx="616" cy="170" r="44" fill="#ffe0eb"/><circle cx="585" cy="187" r="31" fill="#ffd4e4"/><circle cx="646" cy="198" r="29" fill="#ffd7e7"/>
+             </g>
+             <path d="M90 360 C150 350 190 390 270 380 C330 372 410 340 505 360 C590 378 650 355 760 368" fill="none" stroke="#f7f4ee" stroke-width="12" stroke-linecap="round"/>`
+    },
+    "summer-field": {
+      sky1:"#77c9ff", sky2:"#dff6ff", ground:"#7ec88e",
+      extra:`<rect x="0" y="305" width="900" height="195" fill="#73b95f"/>
+             <path d="M0 315 Q180 260 370 305 T900 310 L900 500 L0 500 Z" fill="#7ec88e"/>
+             <path d="M0 355 Q200 310 460 350 T900 340 L900 500 L0 500 Z" fill="#a1d783"/>
+             <rect x="0" y="385" width="900" height="115" fill="#87b85a"/>
+             <g>
+               <rect x="0" y="350" width="900" height="16" fill="#9b7a54"/>
+               <path d="M0 368 C130 345 210 400 345 375 C470 352 620 410 900 360" fill="none" stroke="#bfa1ff" stroke-width="28" opacity=".95"/>
+               <path d="M0 402 C160 380 290 430 470 398 C600 374 760 430 900 395" fill="none" stroke="#8b6cff" stroke-width="30" opacity=".92"/>
+             </g>
+             <circle cx="760" cy="92" r="34" fill="#fff5b4"/>`
+    },
+    "autumn-hills": {
+      sky1:"#cadcf1", sky2:"#f9f6f0", ground:"#d7b267",
+      extra:`<rect x="0" y="310" width="900" height="190" fill="#d7b267"/>
+             <path d="M0 315 Q190 255 360 305 T680 300 T900 320 L900 500 L0 500 Z" fill="#d09b4b"/>
+             <path d="M0 350 Q150 300 280 338 T540 333 T900 350 L900 500 L0 500 Z" fill="#c37e3d"/>
+             <path d="M550 260 L635 120 L720 260 Z" fill="#dde5ee"/>
+             <path d="M570 260 L635 155 L700 260 Z" fill="#c0cfdf"/>
+             <g>
+               <circle cx="175" cy="275" r="40" fill="#c94e34"/><rect x="170" y="280" width="10" height="40" fill="#6e4f39"/>
+               <circle cx="260" cy="255" r="34" fill="#f0ab2f"/><rect x="255" y="260" width="10" height="40" fill="#6e4f39"/>
+               <circle cx="730" cy="280" r="38" fill="#d55934"/><rect x="725" y="285" width="10" height="42" fill="#6e4f39"/>
+             </g>`
+    },
+    "winter-onsen": {
+      sky1:"#cfdbe8", sky2:"#f8fbff", ground:"#eef3f7",
+      extra:`<rect x="0" y="310" width="900" height="190" fill="#eff4f7"/>
+             <rect x="90" y="260" width="320" height="120" rx="20" fill="#83b9c4"/>
+             <ellipse cx="250" cy="275" rx="140" ry="38" fill="#a8d5dc"/>
+             <g opacity=".65" fill="#fff">
+               <ellipse cx="180" cy="215" rx="35" ry="18"/><ellipse cx="250" cy="185" rx="44" ry="20"/><ellipse cx="320" cy="220" rx="32" ry="16"/>
+             </g>
+             <rect x="510" y="170" width="190" height="160" rx="10" fill="#6f5b4d"/>
+             <rect x="490" y="145" width="230" height="42" rx="6" fill="#875f46"/>
+             <path d="M470 350 Q610 300 780 340 T900 330 L900 500 L0 500 L0 360 Q140 330 280 352 T470 350 Z" fill="#fff"/>
+             <g fill="#fff"><circle cx="150" cy="100" r="5"/><circle cx="270" cy="90" r="5"/><circle cx="410" cy="130" r="4"/><circle cx="600" cy="85" r="6"/><circle cx="750" cy="105" r="4"/></g>`
+    },
+    "spring-road": {
+      sky1:"#e7f5ff", sky2:"#fff7fb", ground:"#c7e2b2",
+      extra:`<rect x="0" y="300" width="900" height="200" fill="#b6d89b"/>
+             <path d="M0 332 Q120 300 260 327 T510 320 T900 334 L900 500 L0 500 Z" fill="#d6ecc7"/>
+             <path d="M400 500 L515 260 L620 500 Z" fill="#d8c2aa"/>
+             <path d="M445 500 L520 310 L585 500 Z" fill="#f7f3ef"/>
+             <g>
+               <rect x="135" y="190" width="10" height="120" fill="#7a5c44"/>
+               <circle cx="140" cy="172" r="36" fill="#ffd9e8"/><circle cx="116" cy="190" r="24" fill="#ffdce9"/><circle cx="165" cy="194" r="24" fill="#ffd2e3"/>
+               <rect x="720" y="200" width="10" height="110" fill="#7a5c44"/>
+               <circle cx="725" cy="184" r="34" fill="#ffd7e6"/><circle cx="700" cy="198" r="24" fill="#ffdce9"/><circle cx="750" cy="204" r="23" fill="#ffd0e1"/>
+             </g>`
+    },
+    "summer-road": {
+      sky1:"#7fcfff", sky2:"#ebfbff", ground:"#85c462",
+      extra:`<rect x="0" y="305" width="900" height="195" fill="#7cbc58"/>
+             <path d="M0 322 Q130 285 300 318 T650 313 T900 328 L900 500 L0 500 Z" fill="#98d17a"/>
+             <path d="M415 500 L500 295 L585 500 Z" fill="#50565e"/>
+             <path d="M457 500 L500 350 L543 500 Z" fill="#f9f9f9"/>
+             <path d="M0 355 C100 340 250 390 390 368 C520 348 690 395 900 360" fill="none" stroke="#ae8cff" stroke-width="22"/>
+             <path d="M0 390 C170 370 280 415 440 392 C600 368 720 418 900 390" fill="none" stroke="#7a67ff" stroke-width="22"/>
+             <circle cx="770" cy="92" r="34" fill="#fff3ab"/>`
+    },
+    "autumn-lake": {
+      sky1:"#d4e1ef", sky2:"#fbf6ef", ground:"#cf9d57",
+      extra:`<rect x="0" y="300" width="900" height="200" fill="#d9bb7d"/>
+             <ellipse cx="500" cy="320" rx="180" ry="48" fill="#8eb7c7"/>
+             <ellipse cx="500" cy="320" rx="150" ry="30" fill="#a3ccd9"/>
+             <path d="M0 340 Q180 285 330 330 T640 325 T900 340 L900 500 L0 500 Z" fill="#c78540"/>
+             <g>
+               <circle cx="190" cy="250" r="42" fill="#e3b035"/><rect x="185" y="255" width="10" height="42" fill="#6e4f39"/>
+               <circle cx="270" cy="235" r="35" fill="#c84f31"/><rect x="265" y="240" width="10" height="42" fill="#6e4f39"/>
+               <circle cx="735" cy="240" r="40" fill="#db9129"/><rect x="730" y="246" width="10" height="44" fill="#6e4f39"/>
+             </g>
+             <path d="M560 260 L625 135 L690 260 Z" fill="#dfe7ef"/>
+             <path d="M580 260 L625 170 L670 260 Z" fill="#c8d5e1"/>`
+    }
+  };
+  const p = presets[kind];
+  const svg = `
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 500">
+    <defs>
+      <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="${p.sky1}"/>
+        <stop offset="100%" stop-color="${p.sky2}"/>
+      </linearGradient>
+    </defs>
+    <rect width="900" height="500" fill="url(#sky)"/>
+    ${p.extra}
+  </svg>`;
+  return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+}
+
+function startQuiz(type){
+  currentType = type;
+  idx = 0;
+  history = [];
+  score = {};
+  quizzes[type].dimensions.forEach(k => score[k] = 0);
+  document.getElementById('home').style.display = 'none';
+  document.getElementById('result').classList.remove('active');
+  document.getElementById('quiz').classList.add('active');
+  renderQuestion();
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+function renderQuestion(){
+  const quiz = quizzes[currentType];
+  const qObj = quiz.questions[idx];
+  const isImage = qObj.type === 'image';
+
+  document.getElementById('quizTitle').textContent = quiz.title;
+  document.getElementById('counter').textContent = `${idx + 1} / ${quiz.questions.length}`;
+  document.getElementById('bar').style.width = `${(idx / quiz.questions.length) * 100}%`;
+  document.getElementById('question').textContent = qObj.text;
+  document.getElementById('subtle').textContent = qObj.subtle || '';
+  document.getElementById('subtle').style.display = qObj.subtle ? 'block' : 'none';
+
+  const box = document.getElementById('answers');
+  box.className = isImage ? 'image-grid' : 'answers';
+  box.innerHTML = '';
+
+  qObj.options.forEach((opt, i) => {
+    const letter = String.fromCharCode(65 + i);
+    const key = isImage ? opt.key : opt[1];
+    const label = isImage ? opt.label : opt[0];
+
+    if(isImage){
+      const btn = document.createElement('button');
+      btn.className = 'image-option';
+      btn.innerHTML = `
+        <div class="ph"><img src="${svgScene(opt.scene)}" alt="${label}"></div>
+        <div class="meta"><b>${letter}</b><span>${label}</span></div>
+      `;
+      btn.onclick = () => answer(key);
+      box.appendChild(btn);
+    } else {
+      const btn = document.createElement('button');
+      btn.className = 'answer';
+      btn.innerHTML = `<b>${letter}</b><span>${label}</span>`;
+      btn.onclick = () => answer(key);
+      box.appendChild(btn);
+    }
+  });
+
+  if(isImage){
+    const helper = document.createElement('div');
+    helper.className = 'helper';
+    helper.textContent = '小提醒：這類題目用第一眼直覺作答最準。';
+    box.appendChild(helper);
+  }
+
+  document.getElementById('backBtn').style.visibility = idx === 0 ? 'hidden' : 'visible';
+}
+
+function answer(key){
+  score[key]++;
+  history.push(key);
+  idx++;
+  if(idx >= quizzes[currentType].questions.length){
+    showResult();
+  } else {
+    renderQuestion();
+  }
+}
+
+function goBack(){
+  if(idx === 0) return;
+  idx--;
+  const last = history.pop();
+  score[last]--;
+  renderQuestion();
+}
+
+function showResult(){
+  const quiz = quizzes[currentType];
+  const max = Math.max(...quiz.dimensions.map(k => score[k]));
+  const candidates = quiz.dimensions.filter(k => score[k] === max);
+  let winner = candidates[0];
+  for(let i = history.length - 1; i >= 0; i--){
+    if(candidates.includes(history[i])){
+      winner = history[i];
+      break;
+    }
+  }
+  const res = quiz.results.find(r => r.key === winner);
+
+  document.getElementById('quiz').classList.remove('active');
+  document.getElementById('result').classList.add('active');
+  document.getElementById('resultKicker').textContent = res.kicker;
+  document.getElementById('resultTitle').textContent = res.title;
+  document.getElementById('resultDesc').textContent = res.desc;
+  document.getElementById('innerText').textContent = res.inner;
+  document.getElementById('warningText').textContent = res.warning;
+  document.getElementById('tags').innerHTML = res.tags.map(t => `<span class="tag">${t}</span>`).join('');
+
+  const labels = currentType === 'japan'
+    ? {urban:'城市刺激', culture:'文化美感', nature:'自然遼闊', food:'吃喝滿足', slow:'放空需求'}
+    : {winter:'冬季傾向', spring:'春季傾向', summer:'夏季傾向', autumn:'秋季傾向'};
+
+  const sorted = quiz.dimensions.map(k => [k, score[k]]).sort((a,b) => b[1] - a[1]);
+  document.getElementById('scores').innerHTML = sorted.slice(0,4).map(([k,v]) =>
+    `<div class="score"><small>${labels[k]}</small><b>${v}</b></div>`
+  ).join('');
+
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+function restartSame(){ startQuiz(currentType); }
+function goHome(){
+  currentType = null;
+  document.getElementById('result').classList.remove('active');
+  document.getElementById('quiz').classList.remove('active');
+  document.getElementById('home').style.display = 'block';
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+async function copyResult(){
+  const text = `我的 Japan Inner Trip 結果：${document.getElementById('resultTitle').textContent}\n${document.getElementById('resultDesc').textContent}\n內心深處：${document.getElementById('innerText').textContent}`;
+  try{
+    await navigator.clipboard.writeText(text);
+    alert('結果已複製！');
+  }catch(e){
+    prompt('複製這段文字：', text);
+  }
+}
+</script>
+</body>
+</html>
